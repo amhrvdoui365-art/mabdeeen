@@ -8,8 +8,34 @@ const escapeHtml = (value: string): string => value
   .replaceAll('"', '&quot;')
   .replaceAll("'", '&#039;');
 
+// Railway blocks outbound SMTP on non-Pro plans, so Brevo's HTTPS API is preferred when configured.
+const sendViaBrevo = async (apiKey: string, from: string, to: string, subject: string, text: string, html: string): Promise<boolean> => {
+  try {
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: { 'api-key': apiKey, 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({
+        sender: { name: 'مبدعين', email: from },
+        to: [{ email: to }],
+        subject,
+        textContent: text,
+        htmlContent: html,
+      }),
+      signal: AbortSignal.timeout(15_000),
+    });
+    if (response.ok) return true;
+    console.error('[Email] Brevo delivery failed:', response.status, await response.text());
+    return false;
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    console.error('[Email] Brevo delivery failed:', message);
+    return false;
+  }
+};
+
 const sendEmail = async (to: string, subject: string, text: string, html: string): Promise<boolean> => {
-  const { SMTP_USER, SMTP_APP_PASSWORD } = env;
+  const { SMTP_USER, SMTP_APP_PASSWORD, BREVO_API_KEY } = env;
+  if (BREVO_API_KEY && SMTP_USER) return sendViaBrevo(BREVO_API_KEY, SMTP_USER, to, subject, text, html);
   if (!SMTP_USER || !SMTP_APP_PASSWORD) return false;
 
   const transporter = nodemailer.createTransport({

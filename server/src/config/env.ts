@@ -25,6 +25,7 @@ const envSchema = z.object({
   WHATSAPP_TEMPLATE_LANGUAGE: z.string().trim().default('ar'),
   SMTP_USER: z.string().trim().email().optional().or(z.literal('')),
   SMTP_APP_PASSWORD: z.string().trim().optional().or(z.literal('')),
+  BREVO_API_KEY: z.string().trim().optional(),
 });
 
 const parsedEnv = envSchema.safeParse(process.env);

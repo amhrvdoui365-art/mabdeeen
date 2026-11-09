@@ -68,6 +68,7 @@ UPLOAD_DIR=/data/uploads
 - `SMTP_USER`: حساب Gmail الذي سيرسل رسائل التحقق.
 - `SMTP_APP_PASSWORD`: كلمة مرور التطبيقات من Google، وليست كلمة مرور الحساب الأساسية.
 - تحقق من السماح باتصالات SMTP في خطة Railway الحالية؛ إضافة المتغيرات وحدها لا تتجاوز قيود الشبكة أو مزود البريد.
+- إذا ظهر `Connection timeout` في السجل فالخطة تمنع SMTP. أضف `BREVO_API_KEY` من حساب Brevo مجاني، ووثّق بريد `SMTP_USER` كمرسل داخل Brevo؛ عندها يُرسل البريد عبر HTTPS ولا يلزم `SMTP_APP_PASSWORD`.
 
 ### Google
 
