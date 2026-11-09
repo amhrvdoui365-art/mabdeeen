@@ -1,0 +1,28 @@
+import { Router } from 'express';
+import { adminVerificationPhoto, adminVerificationQueue, getVerification, listLinkRequests, listLinkedChildrenHandler, requestLink, respondLink, reviewVerification, startVerification, submitVerification, listChildParentChatSettings, approveLegacyChatAccess, listChildParentAccessHistory, listParentChildConversations, listParentChildMessages, getParentChildMessageAttachment, updateChildDisplay } from '../controllers/parent.controller';
+import { authenticate, authorize } from '../middlewares/auth.middleware';
+import { publicActionLimiter } from '../middlewares/rate-limit.middleware';
+import { uploadSingleImage } from '../middlewares/upload.middleware';
+import { validate } from '../middlewares/validate.middleware';
+import { asyncHandler } from '../utils/async-handler';
+import { uuidParamSchema } from '../validators/common.validator';
+import { parentLinkRequestSchema, parentLinkResponseSchema, parentVerificationAnswerSchema, parentVerificationReviewSchema, parentVerificationStartSchema, parentVerificationTokenSchema, parentChildParamsSchema, parentChildMessagesParamsSchema, parentChildAttachmentParamsSchema, legacyChatAccessApprovalSchema, parentChildDisplaySchema } from '../validators/parent.validator';
+
+export const parentRouter = Router();
+parentRouter.post('/link-request', authenticate, authorize('Parent'), validate({ body: parentLinkRequestSchema }), asyncHandler(requestLink));
+parentRouter.get('/link-requests', authenticate, authorize('Freelancer'), asyncHandler(listLinkRequests));
+parentRouter.patch('/link-response', authenticate, authorize('Freelancer'), validate({ body: parentLinkResponseSchema }), asyncHandler(respondLink));
+parentRouter.get('/children', authenticate, authorize('Parent'), asyncHandler(listLinkedChildrenHandler));
+parentRouter.patch('/children/:childId/display', authenticate, authorize('Parent'), uploadSingleImage.single('avatar'), validate({ params: parentChildParamsSchema, body: parentChildDisplaySchema }), asyncHandler(updateChildDisplay));
+parentRouter.get('/chat-consent', authenticate, authorize('Freelancer'), asyncHandler(listChildParentChatSettings));
+parentRouter.post('/chat-access/approve-existing-link', authenticate, authorize('Freelancer'), validate({ body: legacyChatAccessApprovalSchema }), asyncHandler(approveLegacyChatAccess));
+parentRouter.get('/access-log', authenticate, authorize('Freelancer'), asyncHandler(listChildParentAccessHistory));
+parentRouter.get('/children/:childId/conversations', authenticate, authorize('Parent'), validate({ params: parentChildParamsSchema }), asyncHandler(listParentChildConversations));
+parentRouter.get('/children/:childId/conversations/:peerId/messages', authenticate, authorize('Parent'), validate({ params: parentChildMessagesParamsSchema }), asyncHandler(listParentChildMessages));
+parentRouter.get('/children/:childId/messages/:messageId/attachment', authenticate, authorize('Parent'), validate({ params: parentChildAttachmentParamsSchema }), asyncHandler(getParentChildMessageAttachment));
+parentRouter.post('/verification/start', authenticate, authorize('Freelancer'), publicActionLimiter, validate({ body: parentVerificationStartSchema }), asyncHandler(startVerification));
+parentRouter.get('/verify/:token', publicActionLimiter, validate({ params: parentVerificationTokenSchema }), asyncHandler(getVerification));
+parentRouter.post('/verify/:token', publicActionLimiter, uploadSingleImage.single('photo'), validate({ params: parentVerificationTokenSchema, body: parentVerificationAnswerSchema }), asyncHandler(submitVerification));
+parentRouter.get('/admin/verifications', authenticate, authorize('Admin'), asyncHandler(adminVerificationQueue));
+parentRouter.get('/admin/verifications/:id/photo', authenticate, authorize('Admin'), validate({ params: uuidParamSchema }), adminVerificationPhoto);
+parentRouter.patch('/admin/verifications/:id', authenticate, authorize('Admin'), validate({ params: uuidParamSchema, body: parentVerificationReviewSchema }), asyncHandler(reviewVerification));
