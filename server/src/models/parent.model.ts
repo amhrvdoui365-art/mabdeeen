@@ -124,4 +124,4 @@ export const reviewParentVerification = (id: string, adminId: string, approve: b
   return row;
 };
 export const findVerificationById = (id: string) => db.prepare('SELECT parent_photo_path, child_id, parent_phone FROM parent_verifications WHERE id = ?').get(id) as { parent_photo_path: string | null; child_id: string; parent_phone: string } | undefined;
-export const markAccountVerificationPending = (childId: string, tokenHash: string) => db.prepare("UPDATE users SET parent_approval_token = ?, account_status = 'PENDING_PARENT_APPROVAL' WHERE id = ? AND role = 'Freelancer' AND is_active = 1").run(tokenHash, childId);
+export const markAccountVerificationPending = (childId: string, tokenHash: string) => db.prepare("UPDATE users SET parent_approval_token = ?, account_status = 'PENDING_PARENT_APPROVAL', is_active = 1 WHERE id = ? AND role = 'Freelancer'").run(tokenHash, childId);

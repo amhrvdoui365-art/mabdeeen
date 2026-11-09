@@ -112,7 +112,7 @@ export const parentChildMessageAttachment = (parentId: string, childId: string, 
 
 export const startParentVerification = async (childId: string, emailInput: string) => {
   const child = await findUserById(childId);
-  if (!child || child.role !== 'Freelancer' || !child.is_active) throw new AppError('الحساب غير مؤهل لبدء التحقق', 403);
+  if (!child || child.role !== 'Freelancer' || (!child.is_active && child.account_status !== 'REJECTED')) throw new AppError('الحساب غير مؤهل لبدء التحقق', 403);
   if (child.account_status === 'PENDING_ADMIN_REVIEW') throw new AppError('تم إرسال التوثيق بالفعل. انتظر مراجعة الإدارة قبل إرسال طلب جديد.', 409);
   const parentEmail = emailInput.trim().toLowerCase();
   const token = randomUUID() + randomUUID().replaceAll('-', '');

@@ -35,6 +35,7 @@ app.use(
     contentSecurityPolicy: {
       directives: {
         frameSrc: ["'self'", 'https:', 'http:'],
+        imgSrc: ["'self'", 'data:', 'blob:'],
       },
     },
     crossOriginResourcePolicy: { policy: 'cross-origin' },

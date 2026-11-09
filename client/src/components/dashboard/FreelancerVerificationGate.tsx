@@ -72,10 +72,12 @@ export const FreelancerVerificationGate = ({ onClose }: { onClose: () => void })
             <div role="status" className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
               <div className="flex items-center gap-3"><LoaderCircle className="size-6 animate-spin text-amber-700"/><div><h2 className="font-black text-amber-950">طلبك قيد مراجعة الإدارة</h2><p className="mt-1 text-sm leading-6 text-amber-900">تم استلام توثيق ولي أمرك. سنفعّل حسابك تلقائياً فور الموافقة؛ تتحقق الصفحة من الحالة كل عدة ثوانٍ.</p></div></div>
             </div>
-          ) : rejected ? (
-            <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900"><div className="flex items-center gap-3"><AlertCircle className="size-6 shrink-0 text-rose-600"/><div><h2 className="font-black">لم تتم الموافقة على التوثيق</h2><p className="mt-1 text-sm leading-6">تواصل مع إدارة مبدعين لمعرفة المطلوب واستكمال التوثيق.</p></div></div></div>
           ) : (
-            <div className="rounded-2xl border border-cyan-100 bg-gradient-to-l from-cyan-50/80 to-white p-5 sm:p-6">
+            <div className="space-y-4">
+              {rejected ? (
+                <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-5 text-rose-900"><div className="flex items-center gap-3"><AlertCircle className="size-6 shrink-0 text-rose-600"/><div><h2 className="font-black">لم تتم الموافقة على التوثيق السابق</h2><p className="mt-1 text-sm leading-6">يمكنك إرسال رابط توثيق جديد لولي الأمر وإعادة التقديم من هنا.</p></div></div></div>
+              ) : null}
+              <div className="rounded-2xl border border-cyan-100 bg-gradient-to-l from-cyan-50/80 to-white p-5 sm:p-6">
               <h2 className="font-black text-slate-900">الخطوة الأولى: أرسل رابط التوثيق لولي أمرك</h2>
               <p className="mt-1 text-sm leading-6 text-slate-600">اكتب بريد ولي الأمر لإرسال رابط التوثيق تلقائيًا.</p>
               <form className="mt-4 flex flex-col gap-3 sm:flex-row" onSubmit={(event) => { event.preventDefault(); setEmailSent(false); start.mutate(); }}>
@@ -84,6 +86,7 @@ export const FreelancerVerificationGate = ({ onClose }: { onClose: () => void })
               </form>
               {start.isError ? <p role="alert" className="mt-3 text-sm font-semibold text-rose-700">{getErrorMessage(start.error, 'تعذر إنشاء رابط التوثيق')}</p> : null}
               {emailSent ? <div role="status" className="mt-4 rounded-2xl border border-emerald-200 bg-emerald-50 p-4"><p className="flex items-center gap-2 text-sm font-extrabold text-emerald-900"><CheckCircle2 className="size-5 shrink-0"/>تم إرسال رابط التوثيق تلقائيًا إلى بريد ولي الأمر.</p></div> : null}
+              </div>
             </div>
           )}
 

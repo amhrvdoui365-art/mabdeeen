@@ -83,7 +83,7 @@ export const login = async (input: LoginInput) => {
     throw new AppError('البريد الإلكتروني أو كلمة المرور غير صحيحة', 401);
   }
 
-  if (!user.is_active) {
+  if (!user.is_active && user.account_status !== 'REJECTED') {
     throw new AppError('تم تجميد هذا الحساب، يرجى التواصل مع الإدارة', 403);
   }
 

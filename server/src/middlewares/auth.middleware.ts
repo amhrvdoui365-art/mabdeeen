@@ -34,17 +34,17 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
   }
 
   const requestPath = req.originalUrl.split('?')[0];
-  const isRejectedAccountStatusCheck = user.role === 'Freelancer' && user.account_status === 'REJECTED' && requestPath.endsWith('/auth/me');
-  if (!user.is_active && !isRejectedAccountStatusCheck) {
-    throw new AppError('تم تجميد هذا الحساب، يرجى التواصل مع الإدارة', 403);
-  }
-
   const isGoogleProfileCompletion = requestPath.endsWith('/auth/google/complete-profile') && !user.profile_complete;
   const allowedForPendingAccount = requestPath.endsWith('/auth/me') ||
     requestPath.endsWith('/parent/verification/start') ||
     requestPath.includes('/support/') ||
     requestPath.endsWith('/realtime/stream') ||
     isGoogleProfileCompletion;
+  const isRejectedFreelancer = user.role === 'Freelancer' && user.account_status === 'REJECTED';
+  if (!user.is_active && !(isRejectedFreelancer && allowedForPendingAccount)) {
+    throw new AppError('تم تجميد هذا الحساب، يرجى التواصل مع الإدارة', 403);
+  }
+
   if (!isImpersonationSession && user.role === 'Freelancer' && user.account_status !== 'ACTIVE' && !allowedForPendingAccount) {
     const message = user.account_status === 'PENDING_ADMIN_REVIEW'
       ? 'أرسل ولي الأمر طلب التوثيق بنجاح. انتظر موافقة الإدارة لتفعيل حسابك.'
