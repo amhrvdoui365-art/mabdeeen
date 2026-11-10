@@ -34,7 +34,8 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
-        frameSrc: ["'self'", 'https:', 'http:'],
+        frameSrc: ["'self'", 'https:', 'http:', 'blob:'],
+        mediaSrc: ["'self'", 'https:', 'blob:'],
         imgSrc: ["'self'", 'data:', 'blob:'],
       },
     },
