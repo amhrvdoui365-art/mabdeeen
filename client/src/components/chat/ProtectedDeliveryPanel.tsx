@@ -3,6 +3,7 @@ import { CheckCircle2, FileImage, FileText, Link2, LockKeyhole, RefreshCw, Shiel
 import { useEffect, useRef, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
 import { getErrorMessage } from '@/services/api';
+import { PdfPreview } from '@/components/delivery/PdfPreview';
 import type { Role } from '@/types';
 
 const STATUS_LABELS: Record<ProtectedDelivery['status'], string> = {
@@ -18,6 +19,7 @@ const Preview = ({ delivery, locked, onOpenImage }: {
   onOpenImage: (url: string) => void;
 }) => {
   const [url, setUrl] = useState<string | null>(null);
+  const [pdf, setPdf] = useState<Blob | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [error, setError] = useState(false);
 
@@ -25,10 +27,15 @@ const Preview = ({ delivery, locked, onOpenImage }: {
     if (delivery.sourceUrl) return;
     let active = true;
     let objectUrl: string | null = null;
+    setUrl(null);
+    setPdf(null);
+    setText(null);
+    setError(false);
     deliveryApi.file(delivery.previewUrl)
       .then(async (blob) => {
         if (!active) return;
         if (delivery.fileType === 'text/plain') setText(await blob.text());
+        else if (delivery.fileType === 'application/pdf') setPdf(blob);
         else {
           objectUrl = URL.createObjectURL(blob);
           setUrl(objectUrl);
@@ -62,8 +69,8 @@ const Preview = ({ delivery, locked, onOpenImage }: {
   if (delivery.fileType.startsWith('image/')) return url
     ? <button type="button" onClick={() => onOpenImage(url)} onContextMenu={(event) => event.preventDefault()} className="block h-40 w-full cursor-zoom-in overflow-hidden bg-slate-950" aria-label="تكبير معاينة التسليم"><img src={url} alt="معاينة ملف التسليم" draggable={false} className="size-full select-none object-contain" /></button>
     : <div className="grid h-40 place-items-center text-xs text-slate-400">جارٍ تجهيز المعاينة…</div>;
-  if (delivery.fileType === 'application/pdf') return url
-    ? <div onContextMenu={locked ? (event) => event.preventDefault() : undefined} className="h-44 overflow-hidden bg-slate-100"><iframe src={`${url}#toolbar=0&navpanes=0&scrollbar=0`} title={`معاينة ${delivery.fileName}`} className="size-full border-0" /></div>
+  if (delivery.fileType === 'application/pdf') return pdf
+    ? <PdfPreview blob={pdf} title={delivery.fileName} className="h-44" />
     : <div className="grid h-44 place-items-center text-xs text-slate-400">جارٍ تجهيز معاينة PDF…</div>;
   if (delivery.fileType.startsWith('video/')) return url
     ? <video src={url} controls controlsList="nodownload" disablePictureInPicture playsInline onContextMenu={locked ? (event) => event.preventDefault() : undefined} className="h-44 w-full bg-black object-contain" />

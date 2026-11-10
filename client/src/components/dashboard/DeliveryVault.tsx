@@ -2,9 +2,11 @@ import { useQuery } from '@tanstack/react-query';
 import { ExternalLink, FileImage, FileText, FolderOpen, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
+import { PdfPreview } from '@/components/delivery/PdfPreview';
 
 const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
+  const [pdf, setPdf] = useState<Blob | null>(null);
   const [text, setText] = useState<string | null>(null);
   const [failed, setFailed] = useState(false);
 
@@ -12,9 +14,14 @@ const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
     if (item.sourceUrl) return;
     let active = true;
     let objectUrl: string | null = null;
+    setBlobUrl(null);
+    setPdf(null);
+    setText(null);
+    setFailed(false);
     deliveryApi.file(item.previewUrl).then(async (blob) => {
       if (!active) return;
       if (item.fileType === 'text/plain') setText(await blob.text());
+      else if (item.fileType === 'application/pdf') setPdf(blob);
       else { objectUrl = URL.createObjectURL(blob); setBlobUrl(objectUrl); }
     }).catch(() => { if (active) setFailed(true); });
     return () => { active = false; if (objectUrl) URL.revokeObjectURL(objectUrl); };
@@ -40,8 +47,8 @@ const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
   if (item.fileType.startsWith('image/')) return blobUrl
     ? <div className="grid h-64 place-items-center bg-slate-950 p-2" onContextMenu={(event) => event.preventDefault()}><img src={blobUrl} alt={item.fileName} draggable={false} className="max-h-full max-w-full select-none object-contain" /></div>
     : <div className="grid h-64 place-items-center text-sm text-slate-400">جارٍ تجهيز المعاينة…</div>;
-  if (item.fileType === 'application/pdf') return blobUrl
-    ? <iframe src={`${blobUrl}#toolbar=0&navpanes=0&scrollbar=0`} title={`معاينة ${item.fileName}`} onContextMenu={(event) => event.preventDefault()} className="h-80 w-full border-0 bg-slate-100" />
+  if (item.fileType === 'application/pdf') return pdf
+    ? <PdfPreview blob={pdf} title={item.fileName} className="h-80 w-full" />
     : <div className="grid h-80 place-items-center text-sm text-slate-400">جارٍ تجهيز معاينة PDF…</div>;
   if (item.fileType.startsWith('video/')) return blobUrl
     ? <video src={blobUrl} controls controlsList="nodownload noplaybackrate" disablePictureInPicture playsInline onContextMenu={(event) => event.preventDefault()} className="h-72 w-full bg-black object-contain" />
