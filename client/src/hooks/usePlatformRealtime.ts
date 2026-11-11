@@ -83,6 +83,9 @@ export const usePlatformRealtime = (): void => {
                       queryClient.invalidateQueries({ queryKey: ['buyer-suggestions'] }),
                       queryClient.invalidateQueries({ queryKey: ['notification-inbox'] }),
                       queryClient.invalidateQueries({ queryKey: ['rewards'] }),
+                      queryClient.invalidateQueries({ queryKey: ['orders'] }),
+                      queryClient.invalidateQueries({ queryKey: ['order'] }),
+                      queryClient.invalidateQueries({ queryKey: ['delivery-vault'] }),
                       queryClient.invalidateQueries({ queryKey: ['protected-deliveries'] }),
                     ]);
                   }

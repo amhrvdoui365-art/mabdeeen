@@ -6,16 +6,7 @@
     <link rel="apple-touch-icon" href="/images/mabdeen-icon.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="theme-color" content="#071c43" />
-    <script>
-      (() => {
-        try {
-          const stored = localStorage.getItem('mabdeen_theme') || localStorage.getItem('saleka_theme') || localStorage.getItem('mansa_theme');
-          const dark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
-          document.documentElement.classList.toggle('dark', dark);
-          document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
-        } catch {}
-      })();
-    </script>
+    <script src="/theme-init.js"></script>
     <meta name="description" content="مبدعين منصة عربية تجمع أصحاب المهارات والعملاء لعرض الأعمال والخدمات وبدء محادثات داخلية آمنة." />
     <meta property="og:type" content="website" />
     <meta property="og:site_name" content="مبدعين | Mabdeen" />

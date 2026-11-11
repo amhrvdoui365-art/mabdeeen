@@ -34,6 +34,8 @@ app.use(
   helmet({
     contentSecurityPolicy: {
       directives: {
+        scriptSrc: ["'self'", 'https://accounts.google.com'],
+        connectSrc: ["'self'", 'https://accounts.google.com'],
         frameSrc: ["'self'", 'https:', 'http:', 'blob:'],
         mediaSrc: ["'self'", 'https:', 'blob:'],
         imgSrc: ["'self'", 'data:', 'blob:'],

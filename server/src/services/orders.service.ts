@@ -51,7 +51,7 @@ export const transitionOrder = (id: string, userId: string, action: 'accept' | '
   if ((transition.role === 'seller') !== isSeller || !transition.from.includes(row.status)) throw new AppError('لا يمكن تنفيذ هذا الإجراء على حالة الطلب الحالية.', 409);
   transaction(() => db.prepare(`UPDATE service_orders SET status = ?, updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now'), responded_at = COALESCE(responded_at, strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) WHERE id = ?`).run(transition.to, id));
   const recipient = isSeller ? row.buyer_id : row.freelancer_id;
-  const titles: Record<typeof action, string> = { accept: 'Order accepted', reject: 'Request declined', start: 'Work started', cancel: 'Order cancelled' };
+  const titles: Record<typeof action, string> = { accept: 'تم قبول طلبك', reject: 'تم الاعتذار عن الطلب', start: 'بدأ المستقل التنفيذ', cancel: 'تم إلغاء الطلب' };
   alertUser(recipient, titles[action], `تحديث جديد على طلب «${row.service_title}».`, id);
   return item(getOrder(id, userId));
 };

@@ -117,7 +117,9 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
   const approveMutation = useMutation({
     mutationFn: deliveryApi.approve,
     onSuccess: ({ delivery, pointsAwarded }) => {
-      queryClient.setQueryData<ProtectedDelivery[]>(deliveryQueryKey, (items = []) => items.filter((item) => item.id !== delivery.id));
+      queryClient.setQueryData<ProtectedDelivery[]>(deliveryQueryKey, (items = []) => orderId
+        ? items.map((item) => item.id === delivery.id ? delivery : item)
+        : items.filter((item) => item.id !== delivery.id));
       if (orderId) void queryClient.invalidateQueries({ queryKey: ['order', orderId] });
       setMessage(`مبروك! تم تأكيد المشروع وإضافة ${pointsAwarded} نقطة إلى المستقل.`);
       void queryClient.invalidateQueries({ queryKey: ['rewards'] });
@@ -157,8 +159,8 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
         <div className="min-w-0 flex-1"><h3 className="truncate text-sm font-extrabold text-slate-900">تسليم المشروع النهائي</h3><p className="text-[10px] text-slate-500">معاينة خاصة وموافقة آمنة</p></div>
         {isFreelancer && canDeliver && (orderId || (projectId && clientId)) ? <>
           <input ref={fileInput} type="file" className="hidden" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,video/mp4,video/webm,video/quicktime" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if (file) { setMessage(null); uploadMutation.mutate(file); } }} />
-          <button type="button" onClick={() => fileInput.current?.click()} disabled={uploadMutation.isPending} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:opacity-50"><UploadCloud className="size-4" /><span className="hidden sm:inline">رفع ملف</span></button>
-          <button type="button" onClick={() => setLinkFormOpen((open) => !open)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-indigo-200 px-3 text-xs font-extrabold text-indigo-700"><Link2 className="size-4" /><span className="hidden sm:inline">إضافة رابط</span></button>
+          <button type="button" aria-label="رفع ملف التسليم" title="رفع ملف" onClick={() => fileInput.current?.click()} disabled={uploadMutation.isPending} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:opacity-50"><UploadCloud className="size-4" /><span className="hidden sm:inline">رفع ملف</span></button>
+          <button type="button" aria-label="إضافة رابط تسليم" aria-expanded={linkFormOpen} title="إضافة رابط" onClick={() => setLinkFormOpen((open) => !open)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-indigo-200 px-3 text-xs font-extrabold text-indigo-700"><Link2 className="size-4" /><span className="hidden sm:inline">إضافة رابط</span></button>
         </> : null}
       </header>
 
@@ -169,9 +171,9 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
           <button disabled={linkMutation.isPending} className="min-h-9 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white disabled:opacity-50">إرسال رابط للمعاينة</button>
         </form> : null}
         {!projectId && !orderId ? <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">اربط التسليم بطلب محدد لعرض الملفات وإرسالها بأمان.</p> : null}
-        {deliveriesQuery.isPending && projectId ? <p className="py-5 text-center text-xs text-slate-400">جارٍ تحميل التسليمات…</p> : null}
+        {deliveriesQuery.isPending && (projectId || orderId) ? <p className="py-5 text-center text-xs text-slate-400">جارٍ تحميل التسليمات…</p> : null}
         {deliveriesQuery.isError ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">تعذر تحميل تسليمات المشروع.</p> : null}
-        {projectId && !deliveriesQuery.isPending && items.length === 0 ? <div className="py-4 text-center"><FileImage className="mx-auto size-8 text-indigo-300" /><p className="mt-2 text-xs font-bold text-slate-600">لا توجد ملفات تسليم بعد</p><p className="mt-1 text-[10px] leading-5 text-slate-400">سيظهر هنا الملف بعد أن يرسله المستقل.</p></div> : null}
+        {(projectId || orderId) && !deliveriesQuery.isPending && items.length === 0 ? <div className="py-4 text-center"><FileImage className="mx-auto size-8 text-indigo-300" /><p className="mt-2 text-xs font-bold text-slate-600">لا توجد ملفات تسليم بعد</p><p className="mt-1 text-[10px] leading-5 text-slate-400">سيظهر هنا الملف بعد أن يرسله المستقل.</p></div> : null}
         {items.map((item) => {
           const locked = item.isLocked;
           const isClient = role === 'Buyer' && item.clientId === clientId;
