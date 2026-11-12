@@ -15,7 +15,7 @@ export const createDeliveryLinkSchema = z.object({
   projectId: z.string().uuid().optional(),
   clientId: z.string().uuid().optional(),
   orderId: z.string().uuid().optional(),
-  url: z.string().url().max(2048),
+  url: z.string().trim().min(4).max(2048),
   title: z.string().trim().min(1).max(140),
 }).refine((value) => Boolean(value.orderId || (value.projectId && value.clientId)));
 

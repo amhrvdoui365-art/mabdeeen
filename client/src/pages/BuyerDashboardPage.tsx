@@ -520,7 +520,7 @@ export const BuyerDashboardPage = () => {
           </div>
         </aside>
       </div>
-      <section className="mt-10"><DeliveryVault /></section>
+      <section className="mt-10"><DeliveryVault viewerRole="Buyer" /></section>
     </div>
   );
 };

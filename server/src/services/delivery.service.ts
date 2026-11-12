@@ -7,6 +7,7 @@ import { createUserNotification } from '../models/notification.model';
 import { emitRealtimeEvent } from './realtime.service';
 import { deletePrivateDeliveryFile, resolvePrivateDeliveryPath, savePrivateDeliveryFile } from './upload.service';
 import { AppError } from '../utils/app-error';
+import { classifyExternalSource, normalizeExternalUrl } from '../utils/external-url';
 import type { Express } from 'express';
 
 const chatLink = (peerId: string, projectId: string) =>
@@ -61,12 +62,9 @@ export const listOrderDeliveryItems = (userId: string, orderId: string) => {
 
 export const uploadOrderDeliveryLink = (freelancerId: string, input: { orderId: string; url: string; title: string }) => {
   const order = assertOrderDeliveryAccess(input.orderId, freelancerId, true);
-  let parsed: URL;
-  try { parsed = new URL(input.url); } catch { throw new AppError('الرابط غير صالح.', 400); }
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.hostname === 'localhost' || /^127\.|^10\.|^192\.168\./.test(parsed.hostname)) throw new AppError('استخدم رابط HTTPS عامًا وآمنًا.', 400);
-  const host = parsed.hostname.toLowerCase();
-  const sourceKind = host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com') ? 'youtube' : host === 'drive.google.com' ? 'drive' : 'website';
-  const row = insertDelivery({ projectId: order.service_id!, orderId: input.orderId, freelancerId, clientId: order.buyer_id, fileType: 'text/uri-list', storageKey: 'external-link', fileName: input.title.trim(), fileSize: Buffer.byteLength(input.url), sourceUrl: parsed.toString(), sourceKind });
+  const sourceUrl = normalizeExternalUrl(input.url);
+  const sourceKind = classifyExternalSource(sourceUrl);
+  const row = insertDelivery({ projectId: order.service_id!, orderId: input.orderId, freelancerId, clientId: order.buyer_id, fileType: 'text/uri-list', storageKey: 'external-link', fileName: input.title.trim(), fileSize: Buffer.byteLength(sourceUrl), sourceUrl, sourceKind });
   db.prepare("UPDATE service_orders SET status = 'delivered', updated_at = strftime('%Y-%m-%dT%H:%M:%fZ', 'now') WHERE id = ?").run(input.orderId);
   notifySafely(order.buyer_id, 'التسليم النهائي جاهز', `أرسل المستقل رابط التسليم لطلب «${order.service_title}».`, `/orders?id=${input.orderId}`);
   emitRealtimeEvent(order.buyer_id, 'data');
@@ -92,17 +90,11 @@ export const listMyDeliveryVault = (userId: string) => listDeliveriesForVault(us
 
 export const uploadProjectDeliveryLink = (freelancerId: string, input: { projectId: string; clientId: string; url: string; title: string }) => {
   const service = assertProjectParticipants(input.projectId, freelancerId, input.clientId);
-  let parsed: URL;
-  try { parsed = new URL(input.url); } catch { throw new AppError('الرابط غير صالح.', 400); }
-  if (parsed.protocol !== 'https:' || parsed.username || parsed.password || parsed.hostname === 'localhost' || /^127\.|^10\.|^192\.168\./.test(parsed.hostname)) {
-    throw new AppError('استخدم رابط HTTPS عام وآمن.', 400);
-  }
-  const host = parsed.hostname.toLowerCase();
-  const sourceKind = host === 'youtu.be' || host === 'youtube.com' || host.endsWith('.youtube.com') ? 'youtube'
-    : host === 'drive.google.com' ? 'drive' : 'website';
+  const sourceUrl = normalizeExternalUrl(input.url);
+  const sourceKind = classifyExternalSource(sourceUrl);
   const row = insertDelivery({ projectId: input.projectId, freelancerId, clientId: input.clientId,
     fileType: 'text/uri-list', storageKey: 'external-link', fileName: input.title.trim(),
-    fileSize: Buffer.byteLength(input.url), sourceUrl: parsed.toString(), sourceKind });
+    fileSize: Buffer.byteLength(sourceUrl), sourceUrl, sourceKind });
   const delivery = mapDeliveryResponse(row);
   notifySafely(input.clientId, 'تسليم مشروع جديد بانتظار مراجعتك',
     `أرسل ${service.freelancerName} رابط معاينة للتسليم النهائي.`, chatLink(freelancerId, input.projectId));

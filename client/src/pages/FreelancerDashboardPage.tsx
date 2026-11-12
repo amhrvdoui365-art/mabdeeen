@@ -441,7 +441,7 @@ export const FreelancerDashboardPage = () => {
           ) : null}
 
           {tab === 'portfolio' ? <PortfolioManager items={portfolio} /> : null}
-          {tab === 'deliveries' ? <DeliveryVault /> : null}
+          {tab === 'deliveries' ? <DeliveryVault viewerRole="Freelancer" /> : null}
 
           {tab === 'services' ? <ServicesManager /> : null}
           {tab === 'community' ? <CommunityDashboardPanel /> : null}

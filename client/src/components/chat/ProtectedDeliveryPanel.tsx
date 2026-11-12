@@ -4,6 +4,8 @@ import { useEffect, useRef, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
 import { getErrorMessage } from '@/services/api';
 import { PdfPreview } from '@/components/delivery/PdfPreview';
+import { LinkPreview } from '@/components/delivery/LinkPreview';
+import { normalizeExternalUrl } from '@/lib/link-preview';
 import type { Role } from '@/types';
 
 const STATUS_LABELS: Record<ProtectedDelivery['status'], string> = {
@@ -13,10 +15,11 @@ const STATUS_LABELS: Record<ProtectedDelivery['status'], string> = {
   revision_requested: 'مطلوب تعديل',
 };
 
-const Preview = ({ delivery, locked, onOpenImage }: {
+const Preview = ({ delivery, locked, onOpenImage, viewerRole }: {
   delivery: ProtectedDelivery;
   locked: boolean;
   onOpenImage: (url: string) => void;
+  viewerRole?: Role;
 }) => {
   const [url, setUrl] = useState<string | null>(null);
   const [pdf, setPdf] = useState<Blob | null>(null);
@@ -48,22 +51,7 @@ const Preview = ({ delivery, locked, onOpenImage }: {
     };
   }, [delivery.fileType, delivery.previewUrl, delivery.sourceUrl]);
 
-  if (delivery.sourceUrl) {
-    let embedUrl = delivery.sourceUrl;
-    try {
-      const parsed = new URL(delivery.sourceUrl);
-      if (delivery.sourceKind === 'youtube') {
-        const videoId = parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).at(-1) ?? '';
-        embedUrl = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(videoId)}`;
-      } else if (delivery.sourceKind === 'drive') {
-        const fileId = parsed.pathname.match(/\/d\/([^/]+)/)?.[1];
-        embedUrl = fileId ? `https://drive.google.com/file/d/${encodeURIComponent(fileId)}/preview` : delivery.sourceUrl;
-      }
-    } catch { /* The server validates the URL; retain a safe fallback card. */ }
-    return <div onContextMenu={(event) => event.preventDefault()} className="relative h-44 overflow-hidden bg-slate-100">
-      <iframe src={embedUrl} title={`معاينة ${delivery.fileName}`} sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="no-referrer" className="size-full border-0" />
-    </div>;
-  }
+  if (delivery.sourceUrl) return <LinkPreview sourceUrl={delivery.sourceUrl} title={delivery.fileName} locked={locked} viewerRole={viewerRole} className="h-60" />;
 
   if (error) return <div className="grid h-32 place-items-center text-xs text-rose-600">تعذرت معاينة الملف.</div>;
   if (delivery.fileType.startsWith('image/')) return url
@@ -93,6 +81,7 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
   const [linkFormOpen, setLinkFormOpen] = useState(false);
   const [linkUrl, setLinkUrl] = useState('');
   const [linkTitle, setLinkTitle] = useState('');
+  const [linkError, setLinkError] = useState<string | null>(null);
   const deliveryQueryKey = ['protected-deliveries', orderId ?? projectId];
   const deliveriesQuery = useQuery({
     queryKey: deliveryQueryKey,
@@ -129,15 +118,26 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
   });
 
   const linkMutation = useMutation({
-    mutationFn: () => orderId ? deliveryApi.addLink({ orderId, url: linkUrl.trim(), title: linkTitle.trim() }) : projectId && clientId ? deliveryApi.addLink({ projectId, clientId, url: linkUrl.trim(), title: linkTitle.trim() }) : Promise.reject(new Error('لا يمكن إضافة رابط لهذه المحادثة.')),
+    mutationFn: (url: string) => orderId ? deliveryApi.addLink({ orderId, url, title: linkTitle.trim() }) : projectId && clientId ? deliveryApi.addLink({ projectId, clientId, url, title: linkTitle.trim() }) : Promise.reject(new Error('لا يمكن إضافة رابط لهذه المحادثة.')),
     onSuccess: (delivery) => {
       queryClient.setQueryData<ProtectedDelivery[]>(deliveryQueryKey, (items = []) => [delivery, ...items]);
       if (orderId) void queryClient.invalidateQueries({ queryKey: ['order', orderId] });
-      setLinkUrl(''); setLinkTitle(''); setLinkFormOpen(false);
+      setLinkUrl(''); setLinkTitle(''); setLinkError(null); setLinkFormOpen(false);
       setMessage('تم إرسال رابط المعاينة بأمان.');
     },
-    onError: (error) => setMessage(getErrorMessage(error, 'تعذر إرسال الرابط.')),
+    onError: (error) => setLinkError(getErrorMessage(error, 'تعذر إرسال الرابط.')),
   });
+
+  const submitLink = () => {
+    const normalized = normalizeExternalUrl(linkUrl);
+    if (!normalized) {
+      setLinkError('اكتب رابطًا عامًا صحيحًا يبدأ بـ https:// بدون بيانات دخول أو عنوان محلي.');
+      return;
+    }
+    setLinkError(null);
+    setMessage(null);
+    linkMutation.mutate(normalized);
+  };
 
   const revisionMutation = useMutation({
     mutationFn: deliveryApi.requestRevision,
@@ -160,16 +160,22 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
         {isFreelancer && canDeliver && (orderId || (projectId && clientId)) ? <>
           <input ref={fileInput} type="file" className="hidden" accept="image/jpeg,image/png,image/webp,image/gif,application/pdf,text/plain,video/mp4,video/webm,video/quicktime" onChange={(event) => { const file = event.target.files?.[0]; event.currentTarget.value = ''; if (file) { setMessage(null); uploadMutation.mutate(file); } }} />
           <button type="button" aria-label="رفع ملف التسليم" title="رفع ملف" onClick={() => fileInput.current?.click()} disabled={uploadMutation.isPending} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:opacity-50"><UploadCloud className="size-4" /><span className="hidden sm:inline">رفع ملف</span></button>
-          <button type="button" aria-label="إضافة رابط تسليم" aria-expanded={linkFormOpen} title="إضافة رابط" onClick={() => setLinkFormOpen((open) => !open)} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-indigo-200 px-3 text-xs font-extrabold text-indigo-700"><Link2 className="size-4" /><span className="hidden sm:inline">إضافة رابط</span></button>
+          <button type="button" aria-label="إضافة رابط تسليم" aria-expanded={linkFormOpen} title="إضافة رابط" onClick={() => { setLinkFormOpen((open) => !open); setLinkError(null); }} className="inline-flex min-h-10 shrink-0 items-center gap-1.5 rounded-xl border border-indigo-200 px-3 text-xs font-extrabold text-indigo-700"><Link2 className="size-4" /><span className="hidden sm:inline">إضافة رابط</span></button>
         </> : null}
       </header>
 
       <div className="min-h-0 flex-1 space-y-3 overflow-y-auto p-3">
-        {linkFormOpen ? <form className="space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3" onSubmit={(event) => { event.preventDefault(); linkMutation.mutate(); }}>
+        {linkFormOpen ? <form className="space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3" onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
           <input required maxLength={140} value={linkTitle} onChange={(event) => setLinkTitle(event.target.value)} placeholder="اسم التسليم" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs" />
-          <input required type="url" maxLength={2048} value={linkUrl} onChange={(event) => setLinkUrl(event.target.value)} placeholder="https:// رابط موقع أو YouTube أو Google Drive" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs" />
+          <input required type="text" inputMode="url" dir="ltr" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={2048} value={linkUrl} onChange={(event) => { setLinkUrl(event.target.value); if (linkError) setLinkError(null); }} placeholder="https://youtu.be/… أو https://drive.google.com/…" aria-invalid={Boolean(linkError)} aria-describedby="delivery-link-hint" className={`w-full rounded-lg border bg-white px-3 py-2 text-xs ${linkError ? 'border-rose-300' : 'border-slate-200'}`} />
+          <p id="delivery-link-hint" className="text-[10px] leading-4 text-slate-500">يدعم YouTube وVimeo وGoogle Drive وإصدارات Docs المنشورة والمواقع وروابط الفيديو المباشرة. المواقع التي تمنع التضمين تُفتح من زر الفتح.</p>
+          {linkError ? <p role="alert" className="rounded-lg bg-rose-50 px-2 py-1.5 text-[10px] font-semibold leading-4 text-rose-700">{linkError}</p> : null}
           <button disabled={linkMutation.isPending} className="min-h-9 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white disabled:opacity-50">إرسال رابط للمعاينة</button>
         </form> : null}
+        {linkFormOpen && isFreelancer ? <div className="rounded-xl border border-indigo-100 bg-white/70 p-2.5 text-[10px] leading-4 text-slate-600 shadow-sm backdrop-blur">
+          <p className="mb-1 flex items-center gap-1 font-extrabold text-indigo-900"><ShieldCheck className="size-3.5" />قبل إرسال الرابط للمشتري</p>
+          <p>تأكد أن الموقع وملفاته عامة ويسمح بالتضمين عبر إعدادات <span dir="ltr">X-Frame-Options / CSP frame-ancestors</span>. المواقع المحمية بتسجيل دخول أو التي تمنع التضمين ستظهر للعميل كبطاقة بديلة مع زر فتح آمن.</p>
+        </div> : null}
         {!projectId && !orderId ? <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">اربط التسليم بطلب محدد لعرض الملفات وإرسالها بأمان.</p> : null}
         {deliveriesQuery.isPending && (projectId || orderId) ? <p className="py-5 text-center text-xs text-slate-400">جارٍ تحميل التسليمات…</p> : null}
         {deliveriesQuery.isError ? <p className="rounded-xl bg-rose-50 p-3 text-xs text-rose-700">تعذر تحميل تسليمات المشروع.</p> : null}
@@ -180,11 +186,11 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
           return <article key={item.id} className="overflow-hidden rounded-xl border border-slate-200 bg-white">
             <div className="flex items-center gap-2 p-2.5">
               {locked ? <LockKeyhole className="size-4 shrink-0 text-amber-600" /> : <CheckCircle2 className="size-4 shrink-0 text-emerald-600" />}
-              <div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-slate-800" title={item.fileName}>{item.fileName}</p><p className="mt-0.5 text-[10px] text-slate-500">{STATUS_LABELS[item.status]} · {(item.fileSize / 1024 / 1024).toFixed(1)} MB</p></div>
-              <FileText className="size-4 shrink-0 text-slate-400" />
+              <div className="min-w-0 flex-1"><p className="truncate text-xs font-extrabold text-slate-800" title={item.fileName}>{item.fileName}</p><p className="mt-0.5 text-[10px] text-slate-500">{STATUS_LABELS[item.status]} · {item.sourceUrl ? 'رابط خارجي' : `${(item.fileSize / 1024 / 1024).toFixed(1)} MB`}</p></div>
+              {item.sourceUrl ? <Link2 className="size-4 shrink-0 text-indigo-500" /> : <FileText className="size-4 shrink-0 text-slate-400" />}
             </div>
             <div className="relative overflow-hidden border-y border-slate-100">
-              <Preview delivery={item} locked={locked} onOpenImage={(url) => setImagePreview({ url, name: item.fileName })} />{orderId ? <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center overflow-hidden"><span className="-rotate-12 rounded-full border border-white/30 bg-slate-950/35 px-4 py-2 text-center text-[10px] font-black tracking-wide text-white/75 shadow-lg">معاينة خاصة · طلب {orderId.slice(0, 8)}</span></div> : null}
+              <Preview delivery={item} locked={locked} viewerRole={role} onOpenImage={(url) => setImagePreview({ url, name: item.fileName })} />{orderId ? <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center overflow-hidden"><span className="-rotate-12 rounded-full border border-white/30 bg-slate-950/35 px-4 py-2 text-center text-[10px] font-black tracking-wide text-white/75 shadow-lg">معاينة خاصة · طلب {orderId.slice(0, 8)}</span></div> : null}
             </div>
             {isClient && item.status === 'pending_approval' && locked ? <div className="grid grid-cols-1 gap-2 p-2.5 sm:grid-cols-2">
               <button type="button" onClick={() => approveMutation.mutate(item.id)} disabled={approveMutation.isPending} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2 text-xs font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50"><CheckCircle2 className="size-4" />قبول الاستلام</button>

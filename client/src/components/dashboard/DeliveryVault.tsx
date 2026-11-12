@@ -3,8 +3,10 @@ import { ExternalLink, FileImage, FileText, FolderOpen, ShieldCheck } from 'luci
 import { useEffect, useMemo, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
 import { PdfPreview } from '@/components/delivery/PdfPreview';
+import { LinkPreview } from '@/components/delivery/LinkPreview';
+import type { Role } from '@/types';
 
-const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
+const VaultPreview = ({ item, viewerRole }: { item: ProtectedDelivery; viewerRole?: Role }) => {
   const [blobUrl, setBlobUrl] = useState<string | null>(null);
   const [pdf, setPdf] = useState<Blob | null>(null);
   const [text, setText] = useState<string | null>(null);
@@ -28,22 +30,7 @@ const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
   }, [item.fileType, item.previewUrl, item.sourceUrl]);
 
   if (failed) return <div className="grid h-52 place-items-center text-sm text-slate-500">تعذرت معاينة الملف.</div>;
-  if (item.sourceUrl) {
-    let src = item.sourceUrl;
-    try {
-      const parsed = new URL(src);
-      if (item.sourceKind === 'youtube') {
-        const id = parsed.hostname === 'youtu.be' ? parsed.pathname.slice(1) : parsed.searchParams.get('v') ?? parsed.pathname.split('/').filter(Boolean).at(-1) ?? '';
-        src = `https://www.youtube-nocookie.com/embed/${encodeURIComponent(id)}`;
-      } else if (item.sourceKind === 'drive') {
-        const id = parsed.pathname.match(/\/d\/([^/]+)/)?.[1];
-        if (id) src = `https://drive.google.com/file/d/${encodeURIComponent(id)}/preview`;
-      }
-    } catch { /* URL validation is enforced by the API. */ }
-    return <div className="relative h-64 overflow-hidden bg-slate-100" onContextMenu={(event) => event.preventDefault()}>
-      <iframe src={src} title={`معاينة ${item.fileName}`} sandbox="allow-scripts allow-forms allow-presentation" referrerPolicy="no-referrer" className="size-full border-0" />
-    </div>;
-  }
+  if (item.sourceUrl) return <LinkPreview sourceUrl={item.sourceUrl} title={item.fileName} locked viewerRole={viewerRole} className="h-80" />;
   if (item.fileType.startsWith('image/')) return blobUrl
     ? <div className="grid h-64 place-items-center bg-slate-950 p-2" onContextMenu={(event) => event.preventDefault()}><img src={blobUrl} alt={item.fileName} draggable={false} className="max-h-full max-w-full select-none object-contain" /></div>
     : <div className="grid h-64 place-items-center text-sm text-slate-400">جارٍ تجهيز المعاينة…</div>;
@@ -57,7 +44,7 @@ const VaultPreview = ({ item }: { item: ProtectedDelivery }) => {
   return <div className="grid h-52 place-items-center text-sm text-slate-400">نوع الملف غير مدعوم للمعاينة.</div>;
 };
 
-export const DeliveryVault = () => {
+export const DeliveryVault = ({ viewerRole = 'Buyer' }: { viewerRole?: Role }) => {
   const vaultQuery = useQuery({ queryKey: ['delivery-vault'], queryFn: deliveryApi.vault });
   const groups = useMemo(() => {
     const grouped = new Map<string, ProtectedDelivery[]>();
@@ -74,7 +61,7 @@ export const DeliveryVault = () => {
     {vaultQuery.isSuccess && groups.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center"><FolderOpen className="mx-auto size-9 text-slate-400" /><p className="mt-3 font-bold text-slate-700">لا توجد تسليمات محفوظة بعد</p><p className="mt-1 text-sm text-slate-500">ستظهر التسليمات المقبولة هنا تلقائياً.</p></div> : null}
     {groups.map(([service, items]) => <section key={service} className="space-y-3"><h3 className="flex items-center gap-2 text-base font-extrabold text-slate-800"><FolderOpen className="size-4 text-indigo-600" />{service}</h3><div className="grid gap-4 xl:grid-cols-2">{items.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onContextMenu={(event) => event.preventDefault()}>
       <div className="flex items-center gap-3 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600">{item.sourceUrl ? <ExternalLink className="size-5" /> : item.fileType.startsWith('image/') ? <FileImage className="size-5" /> : <FileText className="size-5" />}</span><div className="min-w-0 flex-1"><h4 className="truncate text-sm font-extrabold text-slate-900">{item.fileName}</h4><p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString('ar-EG')} · {item.status === 'approved' ? 'مقبول' : item.status === 'revision_requested' ? 'مطلوب تعديله' : 'بانتظار المراجعة'}</p></div></div>
-      <VaultPreview item={item} />
+      <VaultPreview item={item} viewerRole={viewerRole} />
     </article>)}</div></section>)}
   </section>;
 };
