@@ -8,6 +8,7 @@ import { useDocumentTitle } from '@/hooks/useDocumentTitle';
 
 const guideLinks = [
   { id: 'getting-started', label: 'إنشاء الحساب والبدء' },
+  { id: 'young-creators', label: 'رحلة المبدع الصغير' },
   { id: 'roles', label: 'أنواع الحسابات' },
   { id: 'discover', label: 'البحث واكتشاف الخدمات' },
   { id: 'orders', label: 'الطلبات والتسليم' },
@@ -23,8 +24,8 @@ const roles = [
     icon: BriefcaseBusiness,
     title: 'المستقل',
     color: 'bg-cyan-50 text-cyan-800',
-    description: 'اعرض مهاراتك وخدماتك، واستقبل طلبات العملاء، وتابع مراحل التنفيذ والتسليم.',
-    steps: ['أكمل ملفك التعريفي ومهاراتك وموقعك.', 'أرسل طلب التوثيق أو موافقة ولي الأمر إذا ظهرت في حسابك.', 'أنشئ خدمات واضحة بالسعر والوصف والوسائط.', 'تابع الطلبات والرسائل والتسليمات من لوحة المستقل.'],
+    description: 'اعرض مهاراتك ومشاريعك التقنية والإبداعية، وتابع الطلبات المتاحة لحسابك بمشاركة الأسرة عندما يكون المستخدم قاصرًا.',
+    steps: ['أكمل الملف والمهارات مع ولي أمرك إذا كان عمرك أقل من 18 عامًا.', 'أرسل طلب التوثيق أو موافقة ولي الأمر إذا ظهرت في حسابك.', 'لا تقبل مهمة مدفوعة قبل مراجعتها مع ولي أمرك والتحقق من ملاءمتها لعُمرك.', 'تابع الطلبات والرسائل والتسليمات من لوحة المستقل، مع إشراف الأسرة على الترتيبات المالية.'],
   },
   {
     icon: UsersRound,
@@ -43,6 +44,7 @@ const roles = [
 ];
 
 const questions = [
+  { q: 'هل يستطيع الطفل إنشاء حساب مستقل أو استقبال أرباح؟', a: 'تستهدف مبدعين عرض مشاريع الناشئة، لكن إتاحة الحساب والميزات تعتمد على العمر والضوابط السارية وموافقة ولي الأمر. لا توفر المنصة حاليًا محفظة أو تحويلًا أو سحبًا نقديًا؛ النقاط ليست أرباحًا. يجب أن يراجع ولي الأمر أي ترتيب مالي ويتحقق من ملاءمته لعمر الطفل والقواعد المنطبقة.' },
   { q: 'هل مبدعين تستلم ثمن الخدمة أو تحتفظ به؟', a: 'المنصة تعرض الخدمات والطلبات وتوفر متابعة رقمية لها. لا تظهر في مسار الطلب وسيلة دفع أو خدمة ضمان/حساب وسيط للأموال؛ اتفق مع الطرف الآخر بوضوح على تفاصيل المقابل قبل بدء العمل، ولا تعتبر النقاط رصيدًا نقديًا.' },
   { q: 'ماذا أفعل إذا لم يرد المستقل على الطلب؟', a: 'راجع حالة الطلب ورسائله من صفحة الطلبات. استخدم المحادثة داخل الطلب لتوضيح المطلوب، وإذا واجهت مشكلة في المنصة تواصل مع الدعم وأرفق ما يساعد على فهمها.' },
   { q: 'هل يمكنني طلب تعديل بعد التسليم؟', a: 'إذا أصبح التسليم بانتظار موافقتك، يمكنك طلب تعديل من داخل الطلب. اكتب الملاحظات المطلوبة بوضوح. بعد قبول التسليم، يستطيع طرفا الطلب تنزيل ملف التسليم أو نسخ رابط التسليم الخارجي.' },
@@ -92,11 +94,24 @@ export const GuidePage = () => {
         <div className="mt-4 flex flex-wrap gap-3"><Link to="/login" className="text-sm font-extrabold text-cyan-800 hover:underline">تسجيل الدخول</Link><Link to="/register" className="text-sm font-extrabold text-cyan-800 hover:underline">إنشاء حساب جديد</Link><Link to="/complete-profile" className="text-sm font-extrabold text-cyan-800 hover:underline">إكمال الملف</Link></div>
       </ContentSection>
 
-      <ContentSection id="roles" eyebrow="02 · الحسابات" title="اختر المسار المناسب لك" description="لكل دور صفحات وأدوات مختلفة. استخدم حسابك الشخصي فقط، ولا تشارك كلمة المرور أو رموز الدخول مع أي شخص." icon={UsersRound}>
+      <ContentSection id="young-creators" eyebrow="02 · رحلة الناشئة" title="رحلة المبدع الصغير خطوة بخطوة" description="تشجع مبدعين الناشئة من 8 إلى 18 عامًا على تنمية مهاراتهم وعرض مشاريعهم. لا يعني ذلك أن الحساب المستقل أو كل ميزة متاحة لكل عمر؛ تحدد إمكانية الاستخدام وفق ضوابط السن والأمان السارية وموافقة ولي الأمر وإشرافه." icon={Sparkles}>
+        <ol className="grid gap-3 sm:grid-cols-2">
+          {[
+            'ابدأ مع أسرتك: راجعوا شروط الاستخدام وحددوا معًا ما إذا كان إنشاء الحساب والميزة المطلوبة متاحين لعمر الطفل.',
+            'أنشئ ملفًا مناسبًا بمساعدة ولي أمرك، واستخدم اسمًا وصورة ومعلومات لا تكشف عنوان المنزل أو المدرسة أو بيانات الاتصال الشخصية.',
+            'اعرض مشروعًا من إنجازك أو شارك أعمالك التي تملك حق نشرها، واكتب وصفًا محترمًا يوضح ما تعلمته وكيف أنجزته.',
+            'استخدم قنوات المنصة للتواصل، ولا تشارك كلمات المرور أو رموز الدخول أو بيانات الدفع، وأخبر ولي أمرك عن أي طلب مريب أو مزعج.',
+            'قبل قبول أي عمل مدفوع أو ترتيب مالي، يجب أن يراجعه ولي أمرك ويتحقق من ملاءمته للعمر والقواعد المنطبقة. لا توفر مبدعين حاليًا محفظة نقدية أو تحويلًا أو سحبًا للأرباح، والنقاط ليست أموالًا.',
+          ].map((step, index) => <li key={step} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><span className="text-xs font-black text-cyan-700">الخطوة {index + 1}</span><p className="mt-2 text-sm leading-6 text-slate-600">{step}</p></li>)}
+        </ol>
+        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">قد تمنع ضوابط العمر الحسابات المستقلة أو تفرض إعدادات أمان لا يمكن تعطيلها. موافقة ولي الأمر لا تتجاوز قيود السن أو الأنظمة المعمول بها.</div>
+      </ContentSection>
+
+      <ContentSection id="roles" eyebrow="03 · الحسابات" title="اختر المسار المناسب لك" description="لكل دور صفحات وأدوات مختلفة. استخدم حسابك الشخصي فقط، ولا تشارك كلمة المرور أو رموز الدخول مع أي شخص." icon={UsersRound}>
         <div className="grid gap-4 lg:grid-cols-3">{roles.map(({ icon: Icon, title, color, description, steps }) => <article key={title} className="rounded-2xl border border-slate-100 p-5"><span className={`grid size-11 place-items-center rounded-xl ${color}`}><Icon className="size-5" /></span><h3 className="mt-3 text-lg font-black text-slate-900">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-600">{description}</p><ul className="mt-4 space-y-2">{steps.map((step) => <li key={step} className="flex gap-2 text-sm leading-6 text-slate-600"><CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-600" />{step}</li>)}</ul></article>)}</div>
       </ContentSection>
 
-      <ContentSection id="discover" eyebrow="03 · البحث والاكتشاف" title="اعثر على المستقل أو الخدمة المناسبة" description="ابدأ من الرئيسية للبحث عن المستقلين، أو افتح صفحة الخدمات لتصفح الخدمات المنشورة. راجع التفاصيل قبل إرسال طلبك." icon={Search}>
+      <ContentSection id="discover" eyebrow="04 · البحث والاكتشاف" title="اعثر على المستقل أو الخدمة المناسبة" description="ابدأ من الرئيسية للبحث عن المستقلين، أو افتح صفحة الخدمات لتصفح الخدمات المنشورة. راجع التفاصيل قبل إرسال طلبك." icon={Search}>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
           ['بحث المستقلين', 'ابحث بالاسم أو النبذة أو المسمى أو المهارة. تظهر النتائج على صفحات، ويُعاد ضبط الصفحة عند تغيير الفلاتر.'],
           ['فلاتر المستقلين', 'يمكن تضييق النتائج بالمهارة والمحافظة والميزانية والتقييم وسرعة الرد، أو إظهار المتاحين أو الموثقين أو المميزين فقط.'],
@@ -106,7 +121,7 @@ export const GuidePage = () => {
         <div className="mt-5 flex flex-wrap gap-3"><Link to="/#freelancers" className="btn btn-primary">البحث عن مستقلين</Link><Link to="/services" className="btn btn-secondary">تصفح الخدمات</Link></div>
       </ContentSection>
 
-      <ContentSection id="orders" eyebrow="04 · الطلب والتسليم" title="تابع الطلب من بدايته إلى إغلاقه" description="تظهر تفاصيل الطلب وموجزه ورسائله وحالته للمشتري والمستقل المشاركين فيه. استخدم المحادثة المرتبطة بالطلب لتوثيق المطلوب والتعديلات." icon={ClipboardList}>
+      <ContentSection id="orders" eyebrow="05 · الطلب والتسليم" title="تابع الطلب من بدايته إلى إغلاقه" description="تظهر تفاصيل الطلب وموجزه ورسائله وحالته للمشتري والمستقل المشاركين فيه. استخدم المحادثة المرتبطة بالطلب لتوثيق المطلوب والتعديلات." icon={ClipboardList}>
         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">{[
           ['طلب جديد', 'يرسل العميل موجز العمل، ويظهر الطلب للمستقل للقبول أو الرفض.'],
           ['مقبول وقيد التنفيذ', 'بعد القبول يبدأ المستقل التنفيذ ويحدّث حالة الطلب.'],
@@ -117,7 +132,7 @@ export const GuidePage = () => {
         <Link to="/orders" className="mt-5 inline-flex items-center gap-2 text-sm font-extrabold text-cyan-800 hover:underline">افتح صفحة الطلبات<ArrowLeft className="size-4" /></Link>
       </ContentSection>
 
-      <ContentSection id="freelancer-tools" eyebrow="05 · مساحة المستقل" title="الملف والخدمات ومعرض الأعمال" description="حدّث حضورك المهني باستمرار؛ المعلومات الواضحة تساعد العملاء على فهم خبرتك وما تقدمه." icon={BriefcaseBusiness}>
+      <ContentSection id="freelancer-tools" eyebrow="06 · مساحة المستقل" title="الملف والخدمات ومعرض الأعمال" description="حدّث حضورك المهني باستمرار؛ المعلومات الواضحة تساعد العملاء على فهم خبرتك وما تقدمه." icon={BriefcaseBusiness}>
         <div className="grid gap-3 md:grid-cols-2">{[
           ['الملف التعريفي', 'اكتب نبذة دقيقة، وأضف المسمى والمهارات والمحافظة والميزانية المتوقعة، وحدّث حالة التوفر.'],
           ['الخدمات', 'أضف عنوانًا ووصفًا وتصنيفًا وسعرًا بالنقاط ووسائط توضيحية. راجع الخدمة بعد نشرها، وأوقفها مؤقتًا إذا لم تعد متاحة.'],
@@ -126,7 +141,7 @@ export const GuidePage = () => {
         ].map(([title, text]) => <article key={title} className="flex gap-3 rounded-2xl bg-slate-50 p-4"><span className="grid size-9 shrink-0 place-items-center rounded-xl bg-white text-cyan-800"><FileText className="size-4" /></span><div><h3 className="font-extrabold text-slate-900">{title}</h3><p className="mt-1 text-sm leading-6 text-slate-600">{text}</p></div></article>)}</div>
       </ContentSection>
 
-      <ContentSection id="community" eyebrow="06 · المشاركة" title="المجتمع والمفضلة والإشعارات" description="تتيح هذه الأقسام اكتشاف المحتوى ومتابعة النشاط داخل المنصة. تعامل مع منشورات الآخرين باحترام واحفظ خصوصية أصحاب المشاريع." icon={BookOpenCheck}>
+      <ContentSection id="community" eyebrow="07 · المشاركة" title="المجتمع والمفضلة والإشعارات" description="تتيح هذه الأقسام اكتشاف المحتوى ومتابعة النشاط داخل المنصة. تعامل مع منشورات الآخرين باحترام واحفظ خصوصية أصحاب المشاريع." icon={BookOpenCheck}>
         <div className="grid gap-3 sm:grid-cols-3">{[
           [BookOpenCheck, 'المجتمع', 'انشر تجربة أو مشروعًا أو محتوى تعليميًا، وتفاعل مع المنشورات المتاحة. تجنب نشر معلومات شخصية أو مواد لا تملك حقوقها.'],
           [Heart, 'المفضلة', 'احفظ المستقلين أو العناصر التي تدعم المنصة حفظها لتعود إليها من حسابك.'],
@@ -135,7 +150,7 @@ export const GuidePage = () => {
         <div className="mt-4 flex flex-wrap gap-3"><Link to="/community" className="btn btn-secondary">زيارة المجتمع</Link><Link to="/favorites" className="btn btn-secondary">فتح المفضلة</Link></div>
       </ContentSection>
 
-      <ContentSection id="points" eyebrow="07 · النقاط" title="كيف تفهم النقاط والمكافآت؟" description="النقاط قيمة داخلية للعرض أو المكافآت في المنصة، وليست أموالًا نقدية أو رصيدًا مصرفيًا." icon={Coins}>
+      <ContentSection id="points" eyebrow="08 · النقاط" title="كيف تفهم النقاط والمكافآت؟" description="النقاط قيمة داخلية للعرض أو المكافآت في المنصة، وليست أموالًا نقدية أو رصيدًا مصرفيًا." icon={Coins}>
         <ul className="space-y-3">{[
           'قد يظهر سعر الخدمة بالنقاط لتسهيل المقارنة داخل المنصة؛ لا يعني ذلك أن المنصة خصمت مبلغًا أو نفذت تحويلًا ماليًا.',
           'قد تُضاف مكافأة للمستقل بعد قبول التسليم وفق قيمة وإعدادات الإدارة السارية وقتها.',
@@ -144,7 +159,7 @@ export const GuidePage = () => {
         ].map((text) => <li key={text} className="flex gap-2 text-sm leading-7 text-slate-600"><CheckCircle2 className="mt-1 size-4 shrink-0 text-emerald-600" />{text}</li>)}</ul>
       </ContentSection>
 
-      <ContentSection id="safety" eyebrow="08 · الأمان" title="احمِ حسابك وخصوصيتك" description="المزايا التقنية تساعد على تنظيم الاستخدام، لكنها لا تلغي مسؤولية كل مستخدم عن قراراته ومحتواه." icon={ShieldCheck}>
+      <ContentSection id="safety" eyebrow="09 · الأمان" title="احمِ حسابك وخصوصيتك" description="المزايا التقنية تساعد على تنظيم الاستخدام، لكنها لا تلغي مسؤولية كل مستخدم عن قراراته ومحتواه." icon={ShieldCheck}>
         <div className="grid gap-3 md:grid-cols-2">{[
           [LockKeyhole, 'بيانات الدخول', 'استخدم كلمة مرور قوية ولا ترسل كلمة المرور أو رمز التحقق إلى الدعم أو لأي مستخدم آخر. سجّل الخروج من الأجهزة المشتركة.'],
           [ShieldCheck, 'الملفات والوسائط', 'افحص الملفات والروابط قبل فتحها. لا ترفع ملفات تتضمن بيانات شخصية أو سرية دون موافقة أصحابها.'],
@@ -154,7 +169,7 @@ export const GuidePage = () => {
         <div className="mt-5 flex flex-wrap gap-3"><Link to="/privacy" className="btn btn-secondary">سياسة الخصوصية</Link><Link to="/terms" className="btn btn-secondary">الشروط وإخلاء المسؤولية</Link></div>
       </ContentSection>
 
-      <ContentSection id="faq" eyebrow="09 · مساعدة سريعة" title="الأسئلة الشائعة" description="إجابات مختصرة عن أكثر الخطوات التي يحتاجها المستخدمون." icon={CircleHelp}>
+      <ContentSection id="faq" eyebrow="10 · مساعدة سريعة" title="الأسئلة الشائعة" description="إجابات مختصرة عن أكثر الخطوات التي يحتاجها المستخدمون." icon={CircleHelp}>
         <div className="space-y-3">{questions.map(({ q, a }) => <details key={q} className="group rounded-2xl border border-slate-200 bg-white p-4 open:border-cyan-200 open:bg-cyan-50/40"><summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-extrabold text-slate-900"><span>{q}</span><ChevronDown className="size-5 shrink-0 text-cyan-700 transition group-open:rotate-180" /></summary><p className="mt-3 border-t border-slate-100 pt-3 text-sm leading-7 text-slate-600">{a}</p></details>)}</div>
       </ContentSection>
 
