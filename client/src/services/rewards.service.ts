@@ -61,7 +61,9 @@ export const deliveryApi = {
     if (input.clientId) form.append('clientId', input.clientId);
     if (input.orderId) form.append('orderId', input.orderId);
     form.append('file', input.file);
-    const response = await api.post('/deliveries/upload', form, { headers: { 'Content-Type': 'multipart/form-data' } });
+    // Let the browser set the multipart boundary; a manually fixed header can
+    // leave the request without the boundary Multer needs to parse the file.
+    const response = await api.post('/deliveries/upload', form, { headers: { 'Content-Type': null } });
     return unwrap<{ delivery: ProtectedDelivery }>(response).delivery;
   },
   addLink: async (input: { projectId?: string; clientId?: string; orderId?: string; url: string; title: string }): Promise<ProtectedDelivery> => {

@@ -54,7 +54,9 @@ export const errorHandler = (
 
   if (error instanceof multer.MulterError) {
     const requestPath = req.originalUrl;
-    const sizeLimit = requestPath.includes('/services/upload')
+    const sizeLimit = requestPath.includes('/deliveries/upload')
+      ? 50
+      : requestPath.includes('/services/upload')
       ? 25
       : requestPath.includes('/chat/') || requestPath.includes('/support/tickets') || requestPath.includes('/comments')
         ? 15

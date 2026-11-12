@@ -86,6 +86,14 @@ export const uploadDeliveryFile = multer({
   storage: multer.memoryStorage(),
   limits: { fileSize: 50 * 1024 * 1024, files: 1 },
   fileFilter: (_req, file, callback) => {
+    // Some browsers report .txt/.pdf files as application/octet-stream.
+    // Normalize only generic/empty MIME values; upload.service still checks
+    // the actual file signature/content before saving.
+    if (!file.mimetype || file.mimetype === 'application/octet-stream') {
+      const extension = file.originalname.toLowerCase().split('.').pop();
+      if (extension === 'txt') file.mimetype = 'text/plain';
+      else if (extension === 'pdf') file.mimetype = 'application/pdf';
+    }
     if (!DELIVERY_FILE_TYPES.has(file.mimetype)) {
       callback(new AppError('يسمح بالتسليم بصور أو PDF أو TXT أو فيديو MP4/WebM/MOV.', 400));
       return;
