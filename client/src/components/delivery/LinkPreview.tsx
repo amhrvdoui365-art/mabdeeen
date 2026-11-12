@@ -1,11 +1,11 @@
-import { Cloud, ExternalLink, FileText, Globe2, ImageOff, Loader2, Maximize2, Music2, PlayCircle, RefreshCw, ShieldAlert, ShieldCheck, Video, X, type LucideIcon } from 'lucide-react';
+import { Cloud, FileText, Globe2, ImageOff, Loader2, Maximize2, Music2, PlayCircle, RefreshCw, ShieldAlert, ShieldCheck, Video, X, type LucideIcon } from 'lucide-react';
 import { useEffect, useRef, useState, type SyntheticEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { resolveLinkPreview, type LinkPreview as ResolvedLink, type PreviewProvider } from '@/lib/link-preview';
 import type { Role } from '@/types';
 
-const TRUSTED_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
-const SITE_SANDBOX = 'allow-scripts allow-forms allow-presentation';
+const EMBED_SANDBOX = 'allow-scripts allow-same-origin allow-forms allow-presentation';
+const STRICT_SANDBOX = 'allow-scripts allow-forms allow-presentation';
 const FRAME_ALLOW = 'autoplay; encrypted-media; fullscreen; picture-in-picture';
 const LOAD_TIMEOUT_MS = 12_000;
 
@@ -24,8 +24,17 @@ const mediaMeta = (preview: Extract<ResolvedLink, { kind: 'media' }>) =>
     : preview.mediaType === 'image' ? { icon: FileText, tone: 'bg-teal-50 text-teal-700 ring-teal-100' }
       : { icon: Video, tone: 'bg-emerald-50 text-emerald-700 ring-emerald-100' };
 
+const isSelfHost = (url: string): boolean => {
+  try {
+    return new URL(url).host === window.location.host;
+  } catch {
+    return false;
+  }
+};
+
+// External sites keep their own origin (needed for storage and scripts); same-site links stay opaque.
 const frameSandbox = (preview: Extract<ResolvedLink, { kind: 'frame' }>): string =>
-  preview.provider === 'website' ? SITE_SANDBOX : TRUSTED_SANDBOX;
+  preview.provider === 'website' && isSelfHost(preview.embedUrl) ? STRICT_SANDBOX : EMBED_SANDBOX;
 
 const originalLink = (preview: ResolvedLink): string =>
   preview.kind === 'frame' ? preview.originalUrl : preview.url;
@@ -39,14 +48,8 @@ const displayAddress = (link: string): string => {
   }
 };
 
-const StatusDot = ({ state }: { state: 'loading' | 'ready' | 'blocked' }) => (
-  <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${state === 'ready' ? 'bg-emerald-500' : state === 'blocked' ? 'bg-rose-500' : 'animate-pulse bg-amber-500'}`} />
-);
-
-const OpenExternal = ({ link, label = 'فتح في نافذة جديدة', className }: { link: string; label?: string; className?: string }) => (
-  <a href={link} target="_blank" rel="noopener noreferrer" aria-label={label} title={label} className={className ?? 'inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-slate-900 px-2.5 text-[10px] font-extrabold text-white transition hover:bg-slate-800'}>
-    <ExternalLink className="size-3.5" />{label}
-  </a>
+const StatusDot = ({ state }: { state: 'loading' | 'ready' | 'slow' | 'blocked' }) => (
+  <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${state === 'ready' ? 'bg-emerald-500' : state === 'blocked' ? 'bg-rose-500' : state === 'slow' ? 'bg-amber-500' : 'animate-pulse bg-amber-400'}`} />
 );
 
 const BlockedCard = ({ link, title, onRetry, compact = false }: { link: string; title: string; onRetry: () => void; compact?: boolean }) => (
@@ -54,11 +57,8 @@ const BlockedCard = ({ link, title, onRetry, compact = false }: { link: string; 
     <span aria-hidden className="pointer-events-none absolute -end-6 -top-6 size-24 rounded-full bg-indigo-200/30 blur-2xl" />
     <span className="grid size-10 place-items-center rounded-2xl bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100"><ShieldAlert className="size-5" /></span>
     <p className="mt-2 text-xs font-extrabold text-slate-800">تعذّر عرض الموقع داخل المنصة</p>
-    <p className="mt-1 max-w-md text-[10px] leading-4 text-slate-500">الموقع يمنع التضمين عبر إعدادات الحماية (X-Frame-Options أو CSP) أو يحتاج تسجيل دخول. المحتوى نفسه سليم، ويمكنك فتحه في نافذة آمنة.</p>
-    <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
-      <OpenExternal link={link} label="فتح الموقع بأمان" />
-      <button type="button" onClick={onRetry} className="inline-flex min-h-8 items-center gap-1.5 rounded-lg border border-slate-200 bg-white px-2.5 text-[10px] font-extrabold text-slate-600 transition hover:bg-slate-50"><RefreshCw className="size-3.5" />إعادة المحاولة</button>
-    </div>
+    <p className="mt-1 max-w-md text-[10px] leading-4 text-slate-500">الموقع يمنع التضمين عبر إعدادات الحماية (X-Frame-Options أو CSP) أو يحتاج تسجيل دخول، لذلك لا يسمح بعرض محتواه داخل إطار. المحتوى نفسه سليم.</p>
+    <button type="button" onClick={onRetry} className="mt-3 inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-slate-900 px-3 text-[10px] font-extrabold text-white transition hover:bg-slate-800"><RefreshCw className="size-3.5" />إعادة المحاولة</button>
     <p className="mt-2 max-w-full truncate text-[9px] text-slate-400" title={`${title} — ${displayAddress(link)}`}>{displayAddress(link)}</p>
   </div>
 );
@@ -70,7 +70,7 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
   viewerRole?: Role;
   className?: string;
 }) => {
-  const [state, setState] = useState<'loading' | 'ready' | 'blocked'>('loading');
+  const [state, setState] = useState<'loading' | 'ready' | 'slow'>('loading');
   const [attempt, setAttempt] = useState(0);
   const [forceFallback, setForceFallback] = useState(false);
   const [mediaFailed, setMediaFailed] = useState(false);
@@ -80,7 +80,7 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
   const preview = resolveLinkPreview(sourceUrl);
   const isFrame = preview?.kind === 'frame';
   const embedKey = preview ? originalLink(preview) : sourceUrl;
-  const blocked = forceFallback || state === 'blocked' || mediaFailed;
+  const blocked = forceFallback || mediaFailed;
 
   useEffect(() => {
     setState('loading');
@@ -90,7 +90,7 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
 
   useEffect(() => {
     if (!isFrame || state !== 'loading') return;
-    const timer = window.setTimeout(() => setState((current) => current === 'loading' ? 'blocked' : current), LOAD_TIMEOUT_MS);
+    const timer = window.setTimeout(() => setState((current) => current === 'loading' ? 'slow' : current), LOAD_TIMEOUT_MS);
     return () => window.clearTimeout(timer);
   }, [isFrame, embedKey, state, attempt]);
 
@@ -140,7 +140,7 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
   const ProviderIcon = meta.icon;
   const note = viewerRole === 'Freelancer'
     ? 'أنت تعرض رابطًا شاركته: تأكد أن الموقع يسمح بالتضمين (X-Frame-Options / CSP) وأن الصفحات والوسائط عامة، لأن المحتوى المحمي بتسجيل الدخول لن يظهر للعميل.'
-    : 'تصفح العمل داخل المنصة مباشرة. لو ظهرت الصفحة فارغة فالموقع يمنع التضمين أو يطلب تسجيل دخول؛ استخدم زر الفتح الآمن.';
+    : 'تصفح العمل داخل المنصة مباشرة. لو ظهرت الصفحة فارغة فالموقع يمنع التضمين أو يطلب تسجيل دخول، وجرّب زر إعادة المحاولة.';
   const retry = () => setAttempt((value) => value + 1);
   const block = locked ? (event: SyntheticEvent) => event.preventDefault() : undefined;
 
@@ -163,10 +163,10 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
       allowFullScreen
       loading="lazy"
       onLoad={() => setState('ready')}
-      onError={() => setState('blocked')}
+      onError={() => setForceFallback(true)}
       className="size-full border-0"
     />
-    {state === 'loading' ? <div className="pointer-events-none absolute inset-0 grid place-items-center bg-white/70 backdrop-blur-[2px]"><span className="inline-flex items-center gap-2 rounded-full bg-white/90 px-3 py-1.5 text-[10px] font-bold text-slate-500 shadow-sm ring-1 ring-slate-200"><Loader2 className="size-3.5 animate-spin text-indigo-500" />جارٍ تحميل المعاينة…</span></div> : null}
+    {state !== 'ready' ? <span className="pointer-events-none absolute bottom-2 start-2 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-slate-500 shadow-sm ring-1 ring-slate-200"><Loader2 className="size-3 animate-spin text-indigo-500" />{state === 'slow' ? 'التحميل بطيء… لو الصفحة مش ظاهرة اضغط «المعاينة لا تعمل؟»' : 'جارٍ تحميل المعاينة…'}</span> : null}
   </div> : null;
 
   const body = media ?? frame ?? <BlockedCard link={link} title={title} onRetry={() => { setForceFallback(false); retry(); }} compact />;
@@ -177,7 +177,6 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
       <div className="min-w-0 flex-1">
         <p className={`flex items-center gap-1.5 truncate text-[10px] font-extrabold ${fullscreen ? 'text-white' : 'text-slate-800'}`}><StatusDot state={blocked ? 'blocked' : state} />{meta.label}<span className={`truncate font-semibold ${fullscreen ? 'text-white/50' : 'text-slate-400'}`} dir="ltr">{displayAddress(link)}</span></p>
       </div>
-      <a href={link} target="_blank" rel="noopener noreferrer" aria-label="فتح الرابط الأصلي في نافذة جديدة" title="فتح الرابط الأصلي" className={`grid size-8 shrink-0 place-items-center rounded-lg transition ${fullscreen ? 'text-white/70 hover:bg-white/10 hover:text-white' : 'text-slate-500 hover:bg-white hover:text-indigo-700'}`}><ExternalLink className="size-4" /></a>
       <button ref={fullscreen ? undefined : expandButtonRef} type="button" onClick={() => setExpanded(true)} disabled={fullscreen} aria-label="فتح معاينة الرابط بالحجم الكامل" title="تكبير المعاينة" className={`grid size-8 shrink-0 place-items-center rounded-lg transition disabled:hidden ${fullscreen ? 'text-white/70' : 'text-slate-500 hover:bg-white hover:text-indigo-700'}`}><Maximize2 className="size-4" /></button>
       {fullscreen ? <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"><X className="size-5" /></button> : null}
     </div>

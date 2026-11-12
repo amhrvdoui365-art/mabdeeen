@@ -168,13 +168,13 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
         {linkFormOpen ? <form className="space-y-2 rounded-xl border border-indigo-100 bg-indigo-50/50 p-3" onSubmit={(event) => { event.preventDefault(); submitLink(); }}>
           <input required maxLength={140} value={linkTitle} onChange={(event) => setLinkTitle(event.target.value)} placeholder="اسم التسليم" className="w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs" />
           <input required type="text" inputMode="url" dir="ltr" autoCapitalize="none" autoCorrect="off" spellCheck={false} maxLength={2048} value={linkUrl} onChange={(event) => { setLinkUrl(event.target.value); if (linkError) setLinkError(null); }} placeholder="https://youtu.be/… أو https://drive.google.com/…" aria-invalid={Boolean(linkError)} aria-describedby="delivery-link-hint" className={`w-full rounded-lg border bg-white px-3 py-2 text-xs ${linkError ? 'border-rose-300' : 'border-slate-200'}`} />
-          <p id="delivery-link-hint" className="text-[10px] leading-4 text-slate-500">يدعم YouTube وVimeo وGoogle Drive وإصدارات Docs المنشورة والمواقع وروابط الفيديو المباشرة. المواقع التي تمنع التضمين تُفتح من زر الفتح.</p>
+          <p id="delivery-link-hint" className="text-[10px] leading-4 text-slate-500">يدعم YouTube وVimeo وGoogle Drive وإصدارات Docs المنشورة والمواقع وروابط الفيديو المباشرة. المواقع التي تمنع التضمين تظهر كبطاقة توضيحية داخل المنصة.</p>
           {linkError ? <p role="alert" className="rounded-lg bg-rose-50 px-2 py-1.5 text-[10px] font-semibold leading-4 text-rose-700">{linkError}</p> : null}
           <button disabled={linkMutation.isPending} className="min-h-9 rounded-lg bg-indigo-600 px-3 text-xs font-bold text-white disabled:opacity-50">إرسال رابط للمعاينة</button>
         </form> : null}
         {linkFormOpen && isFreelancer ? <div className="rounded-xl border border-indigo-100 bg-white/70 p-2.5 text-[10px] leading-4 text-slate-600 shadow-sm backdrop-blur">
           <p className="mb-1 flex items-center gap-1 font-extrabold text-indigo-900"><ShieldCheck className="size-3.5" />قبل إرسال الرابط للمشتري</p>
-          <p>تأكد أن الموقع وملفاته عامة ويسمح بالتضمين عبر إعدادات <span dir="ltr">X-Frame-Options / CSP frame-ancestors</span>. المواقع المحمية بتسجيل دخول أو التي تمنع التضمين ستظهر للعميل كبطاقة بديلة مع زر فتح آمن.</p>
+          <p>تأكد أن الموقع وملفاته عامة ويسمح بالتضمين عبر إعدادات <span dir="ltr">X-Frame-Options / CSP frame-ancestors</span>. المواقع المحمية بتسجيل دخول أو التي تمنع التضمين ستظهر للعميل كبطاقة توضيحية داخل المنصة.</p>
         </div> : null}
         {!projectId && !orderId ? <p className="rounded-xl bg-amber-50 p-3 text-xs leading-5 text-amber-800">اربط التسليم بطلب محدد لعرض الملفات وإرسالها بأمان.</p> : null}
         {deliveriesQuery.isPending && (projectId || orderId) ? <p className="py-5 text-center text-xs text-slate-400">جارٍ تحميل التسليمات…</p> : null}

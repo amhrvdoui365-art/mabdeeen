@@ -1,5 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
-import { ExternalLink, FileImage, FileText, FolderOpen, ShieldCheck } from 'lucide-react';
+import { FileImage, FileText, FolderOpen, Link2, ShieldCheck } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
 import { PdfPreview } from '@/components/delivery/PdfPreview';
@@ -60,7 +60,7 @@ export const DeliveryVault = ({ viewerRole = 'Buyer' }: { viewerRole?: Role }) =
     {vaultQuery.isError ? <p role="alert" className="rounded-xl bg-rose-50 p-4 text-sm text-rose-700">تعذر تحميل الأرشيف.</p> : null}
     {vaultQuery.isSuccess && groups.length === 0 ? <div className="rounded-2xl border border-dashed border-slate-300 p-12 text-center"><FolderOpen className="mx-auto size-9 text-slate-400" /><p className="mt-3 font-bold text-slate-700">لا توجد تسليمات محفوظة بعد</p><p className="mt-1 text-sm text-slate-500">ستظهر التسليمات المقبولة هنا تلقائياً.</p></div> : null}
     {groups.map(([service, items]) => <section key={service} className="space-y-3"><h3 className="flex items-center gap-2 text-base font-extrabold text-slate-800"><FolderOpen className="size-4 text-indigo-600" />{service}</h3><div className="grid gap-4 xl:grid-cols-2">{items.map((item) => <article key={item.id} className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm" onContextMenu={(event) => event.preventDefault()}>
-      <div className="flex items-center gap-3 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600">{item.sourceUrl ? <ExternalLink className="size-5" /> : item.fileType.startsWith('image/') ? <FileImage className="size-5" /> : <FileText className="size-5" />}</span><div className="min-w-0 flex-1"><h4 className="truncate text-sm font-extrabold text-slate-900">{item.fileName}</h4><p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString('ar-EG')} · {item.status === 'approved' ? 'مقبول' : item.status === 'revision_requested' ? 'مطلوب تعديله' : 'بانتظار المراجعة'}</p></div></div>
+      <div className="flex items-center gap-3 p-4"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-slate-100 text-slate-600">{item.sourceUrl ? <Link2 className="size-5" /> : item.fileType.startsWith('image/') ? <FileImage className="size-5" /> : <FileText className="size-5" />}</span><div className="min-w-0 flex-1"><h4 className="truncate text-sm font-extrabold text-slate-900">{item.fileName}</h4><p className="mt-1 text-xs text-slate-500">{new Date(item.createdAt).toLocaleDateString('ar-EG')} · {item.status === 'approved' ? 'مقبول' : item.status === 'revision_requested' ? 'مطلوب تعديله' : 'بانتظار المراجعة'}</p></div></div>
       <VaultPreview item={item} viewerRole={viewerRole} />
     </article>)}</div></section>)}
   </section>;
