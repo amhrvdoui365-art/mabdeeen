@@ -16,6 +16,7 @@ import {
   setUserPassword,
   setUserStatus,
   setUserVerified,
+  setUserDemoAccount,
   updateManagedUser,
 } from '../models/admin.model';
 import { updateFreelancerProfile } from '../models/freelancer.model';
@@ -85,6 +86,17 @@ export const updateUserVerified = async (userId: string, isVerified: boolean) =>
     isVerified ? 'تم اعتماد شارة التوثيق لملفك.' : 'لم تعد شارة التوثيق ظاهرة على ملفك.', '/dashboard');
 
   return user;
+};
+
+export const updateUserDemoAccount = async (userId: string, isDemoAccount: boolean) => {
+  const user = await findUserById(userId);
+  if (!user) throw new AppError('المستخدم غير موجود', 404);
+  if (isDemoAccount && (!user.is_active || !user.profile_complete || user.account_status !== 'ACTIVE')) {
+    throw new AppError('يجب أن يكون حساب العرض نشطًا ومكتمل البيانات.', 422);
+  }
+  const updated = setUserDemoAccount(userId, isDemoAccount);
+  if (!updated) throw new AppError('تعذر تحديث حساب العرض. تحقق من أن الحساب نشط ومكتمل.', 422);
+  return updated;
 };
 
 /** God-mode profile write: sanitised, moderation-scanned, then persisted. */

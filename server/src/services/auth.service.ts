@@ -5,6 +5,7 @@ import {
   completeGoogleProfileForUser,
   findUserByEmail,
   findUserById,
+  findDemoUserByRole,
   setOwnPassword,
   updateIncompleteOAuthAccountType,
   toPublicUser,
@@ -12,7 +13,6 @@ import {
 } from '../models/user.model';
 import { AppError } from '../utils/app-error';
 import { signToken } from '../utils/jwt';
-import { env } from '../config/env';
 import type { UserRole } from '../types/auth';
 import type { GoogleProfileCompletionInput, LoginInput, RegisterInput } from '../validators/auth.validator';
 
@@ -41,22 +41,9 @@ const buildAuthResult = (user: UserRow, isDemo = false) => {
   };
 };
 
-const demoAccountIds: Record<UserRole, string | undefined> = {
-  Freelancer: env.DEMO_FREELANCER_USER_ID,
-  Buyer: env.DEMO_BUYER_USER_ID,
-  Parent: env.DEMO_PARENT_USER_ID,
-  Admin: env.DEMO_ADMIN_USER_ID,
-};
-
 export const getDemoLoginOptions = async () => {
-  const roles = Object.keys(demoAccountIds) as UserRole[];
-  if (env.DEMO_MODE_ENABLED !== 'true' || roles.some((role) => !demoAccountIds[role])) return { enabled: false };
-
-  const accounts = await Promise.all(roles.map(async (role) => {
-    const userId = demoAccountIds[role]!;
-    const user = await findUserById(userId);
-    return Boolean(user && user.role === role && user.is_active && user.profile_complete && user.account_status === 'ACTIVE');
-  }));
+  const roles: UserRole[] = ['Freelancer', 'Buyer', 'Parent', 'Admin'];
+  const accounts = await Promise.all(roles.map((role) => findDemoUserByRole(role)));
   return { enabled: accounts.every(Boolean) };
 };
 
@@ -65,8 +52,7 @@ export const loginDemo = async (role: UserRole) => {
     throw new AppError('الدخول التجريبي غير مفعّل أو لم تُجهّز حساباته بعد.', 503);
   }
 
-  const userId = demoAccountIds[role];
-  const user = userId ? await findUserById(userId) : null;
+  const user = await findDemoUserByRole(role);
   if (!user || user.role !== role || !user.is_active || !user.profile_complete || user.account_status !== 'ACTIVE') {
     throw new AppError('حساب العرض غير جاهز لهذا الدور. راجع إعدادات حسابات Demo.', 503);
   }

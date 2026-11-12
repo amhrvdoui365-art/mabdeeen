@@ -15,6 +15,7 @@ import {
   updateUserFeatured,
   updateUserStatus,
   updateUserVerified,
+  updateUserDemoAccount,
 } from '../services/admin.service';
 import type {
   AdminReportsQueryInput,
@@ -65,6 +66,15 @@ export const changeUserVerified = async (req: Request, res: Response): Promise<v
   res.status(200).json({
     success: true,
     message: user.isVerified ? 'تم توثيق الحساب بالعلامة الزرقاء' : 'تم إزالة التوثيق عن الحساب',
+    data: { user },
+  });
+};
+
+export const changeUserDemoAccount = async (req: Request, res: Response): Promise<void> => {
+  const user = await updateUserDemoAccount(String(req.params.id), req.body.isDemoAccount as boolean);
+  res.status(200).json({
+    success: true,
+    message: user.isDemoAccount ? 'تم اختيار الحساب لحسابات العرض التجريبي' : 'تم إزالة الحساب من حسابات العرض',
     data: { user },
   });
 };

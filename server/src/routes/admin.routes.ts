@@ -3,6 +3,7 @@ import {
   changeReportStatus,
   changeUserFeatured,
   changeUserStatus,
+  changeUserDemoAccount,
   changeUserVerified,
   deleteReviewHandler,
   editUser,
@@ -36,6 +37,7 @@ import {
   updateReportSchema,
   updateUserFeaturedSchema,
   updateUserStatusSchema,
+  updateUserDemoAccountSchema,
   updateUserVerifiedSchema,
   adminSetPasswordSchema,
 } from '../validators/admin.validator';
@@ -116,6 +118,12 @@ adminRouter.get(
   '/users',
   validate({ query: adminUsersQuerySchema }),
   asyncHandler(listUsers),
+);
+
+adminRouter.patch(
+  '/users/:id/demo',
+  validate({ params: uuidParamSchema, body: updateUserDemoAccountSchema }),
+  asyncHandler(changeUserDemoAccount),
 );
 
 adminRouter.patch(

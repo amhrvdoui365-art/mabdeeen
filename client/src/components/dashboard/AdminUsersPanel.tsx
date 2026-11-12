@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   KeyRound,
   LogIn,
+  Presentation,
   Pencil,
   ShieldCheck,
   Search,
@@ -213,6 +214,15 @@ export const AdminUsersPanel = () => {
     onError: (error) => toast.error(getErrorMessage(error, 'تعذر تحديث التوثيق')),
   });
 
+  const demoAccountMutation = useMutation({
+    mutationFn: ({ id, isDemoAccount }: { id: string; isDemoAccount: boolean }) => adminApi.setUserDemoAccount(id, isDemoAccount),
+    onSuccess: async (updated) => {
+      toast.success(updated.isDemoAccount ? 'تم اختيار الحساب للعرض التجريبي' : 'تمت إزالة الحساب من العرض التجريبي');
+      await invalidate();
+    },
+    onError: (error) => toast.error(getErrorMessage(error, 'تعذر تحديث حساب العرض')),
+  });
+
   const featuredMutation = useMutation({
     mutationFn: ({
       id,
@@ -314,6 +324,7 @@ export const AdminUsersPanel = () => {
   const isBusy =
     statusMutation.isPending ||
     verifiedMutation.isPending ||
+    demoAccountMutation.isPending ||
     featuredMutation.isPending ||
     editMutation.isPending ||
     passwordMutation.isPending ||
@@ -326,6 +337,9 @@ export const AdminUsersPanel = () => {
           <h2 className="text-lg font-extrabold text-slate-900">إدارة المستخدمين (وضع كامل)</h2>
           <p className="mt-1 text-xs font-semibold text-slate-500">
             وثّق الحسابات، ميّز البروفايلات، عدّل أي حقل، أو أعين كلمة مرور وحذف الحساب مباشرة من الجدول.
+          </p>
+          <p className="mt-2 text-xs font-bold leading-6 text-violet-800">
+            لتجهيز الدخول التجريبي، اضغط زر الشاشة بجوار حساب واحد لكل دور. يجب أن تكون الحسابات نشطة ومكتملة؛ بعدها تظهر أزرار Demo في صفحة تسجيل الدخول.
           </p>
         </div>
         {usersQuery.isFetching ? <Spinner className="size-5" /> : null}
@@ -420,6 +434,7 @@ export const AdminUsersPanel = () => {
                                   {user.name}
                                 </p>
                                 {user.isVerified ? <VerifiedBadge /> : null}
+                                {user.isDemoAccount ? <Badge tone="sky">Demo</Badge> : null}
                                 {user.isFeatured ? (
                                   <Star className="size-3.5 shrink-0 fill-amber-400 text-amber-400" />
                                 ) : null}
@@ -477,6 +492,21 @@ export const AdminUsersPanel = () => {
                         </td>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-1.5">
+                            <button
+                              type="button"
+                              disabled={isBusy}
+                              onClick={() => {
+                                const nextValue = !user.isDemoAccount;
+                                const confirmation = nextValue
+                                  ? `تحديد ${user.name} كحساب عرض لدور ${user.role}؟ سيحل محل حساب العرض الحالي من الدور نفسه إن وُجد.`
+                                  : `إزالة ${user.name} من حسابات العرض؟`;
+                                if (window.confirm(confirmation)) demoAccountMutation.mutate({ id: user.id, isDemoAccount: nextValue });
+                              }}
+                              className={user.isDemoAccount ? 'rounded-lg border border-violet-200 bg-violet-50 p-2 text-violet-700' : actionButtonClass}
+                              title={user.isDemoAccount ? 'إزالة من حسابات العرض' : 'تحديد كحساب عرض لهذا الدور'}
+                            >
+                              {demoAccountMutation.isPending && demoAccountMutation.variables?.id === user.id ? <Spinner className="size-4" /> : <Presentation className="size-4" />}
+                            </button>
                             {isFreelancer ? (
                               <>
                                 <button

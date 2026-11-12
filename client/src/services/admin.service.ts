@@ -107,6 +107,11 @@ export const adminApi = {
     return data.user;
   },
 
+  setUserDemoAccount: async (userId: string, isDemoAccount: boolean): Promise<AdminUser> => {
+    const response = await api.patch(`/admin/users/${userId}/demo`, { isDemoAccount });
+    return unwrap<{ user: AdminUser }>(response).user;
+  },
+
   manageUser: async (userId: string, payload: AdminUserPatch): Promise<AdminUser> => {
     const response = await api.patch(`/admin/users/${userId}`, payload);
     const data = unwrap<{ user: AdminUser }>(response);

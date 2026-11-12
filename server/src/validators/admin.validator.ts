@@ -63,6 +63,10 @@ export const updateUserVerifiedSchema = z.object({
   isVerified: z.boolean({ error: 'حالة التوثيق مطلوبة' }),
 });
 
+export const updateUserDemoAccountSchema = z.object({
+  isDemoAccount: z.boolean({ error: 'حالة حساب العرض مطلوبة' }),
+});
+
 export const manageUserSchema = z
   .object({
     ...updateProfileShape,

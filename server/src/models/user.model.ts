@@ -26,6 +26,7 @@ export interface UserRow {
   avg_response_hours: number | null;
   token_invalid_before: string | null;
   profile_complete: number;
+  is_demo_account: number;
   is_active: number;
   created_at: string;
   updated_at: string;
@@ -78,6 +79,14 @@ export const findUserById = async (id: string): Promise<UserRow | null> => {
     .prepare('SELECT * FROM users WHERE id = ? LIMIT 1')
     .get(id) as UserRow | undefined;
 
+  return row ?? null;
+};
+
+export const findDemoUserByRole = async (role: UserRole): Promise<UserRow | null> => {
+  const row = db.prepare(`SELECT * FROM users
+    WHERE lower(role) = lower(?) AND is_demo_account = 1 AND is_active = 1
+      AND profile_complete = 1 AND account_status = 'ACTIVE'
+    ORDER BY created_at ASC, id ASC LIMIT 1`).get(role) as UserRow | undefined;
   return row ?? null;
 };
 

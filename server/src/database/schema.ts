@@ -31,6 +31,7 @@ CREATE TABLE IF NOT EXISTS users (
   lifetime_points INTEGER NOT NULL DEFAULT 0 CHECK (lifetime_points >= 0),
   verified_until TEXT,
   premium_badge_until TEXT,
+  is_demo_account INTEGER NOT NULL DEFAULT 0 CHECK (is_demo_account IN (0, 1)),
   is_active INTEGER NOT NULL DEFAULT 1 CHECK (is_active IN (0, 1)),
   created_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now')),
   updated_at TEXT NOT NULL DEFAULT (strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))

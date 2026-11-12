@@ -27,6 +27,7 @@ interface AdminUserRow {
   is_available: number;
   is_featured: number;
   is_verified: number;
+  is_demo_account: number;
   featured_until: string | null;
   avg_response_hours: number | null;
   created_at: string;
@@ -86,7 +87,7 @@ const ADMIN_USER_SELECT = `
   SELECT
     u.id, u.name, u.email, u.role,
     u.title, u.bio, u.location, u.min_budget, u.hourly_rate, u.avatar_url,
-    u.is_active, u.is_available, u.is_featured, u.is_verified,
+    u.is_active, u.is_available, u.is_featured, u.is_verified, u.is_demo_account,
     u.featured_until, u.avg_response_hours, u.created_at,
     COALESCE(s.avg_rating, 0) AS avg_rating,
     COALESCE(s.review_count, 0) AS review_count,
@@ -114,6 +115,7 @@ const mapAdminUser = (row: AdminUserRow): AdminUser => {
     isAvailable: Boolean(row.is_available),
     isFeatured: Boolean(row.is_featured),
     isVerified: Boolean(row.is_verified),
+    isDemoAccount: Boolean(row.is_demo_account),
     featuredUntil: row.featured_until,
     avgResponseHours: row.avg_response_hours === null ? null : Number(row.avg_response_hours),
     createdAt: row.created_at,
@@ -153,6 +155,30 @@ export const getAdminUserById = (userId: string): AdminUser | null => {
     .get(userId) as AdminUserRow | undefined;
 
   return row ? mapAdminUser(row) : null;
+};
+
+export const setUserDemoAccount = (userId: string, isDemoAccount: boolean): AdminUser | null => {
+  const target = db.prepare('SELECT role FROM users WHERE id = ? LIMIT 1').get(userId) as { role: string } | undefined;
+  if (!target) return null;
+
+  db.exec('BEGIN IMMEDIATE');
+  try {
+    if (isDemoAccount) {
+      db.prepare('UPDATE users SET is_demo_account = 0 WHERE role = ? AND is_demo_account = 1').run(target.role);
+    }
+    const result = db.prepare(`UPDATE users SET is_demo_account = ?
+      WHERE id = ? AND is_active = 1 AND profile_complete = 1 AND account_status = 'ACTIVE'`)
+      .run(isDemoAccount ? 1 : 0, userId);
+    if (!result.changes) {
+      db.exec('ROLLBACK');
+      return null;
+    }
+    db.exec('COMMIT');
+    return getAdminUserById(userId);
+  } catch (error) {
+    db.exec('ROLLBACK');
+    throw error;
+  }
 };
 
 export const listAdminUsers = async (

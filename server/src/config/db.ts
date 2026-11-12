@@ -44,6 +44,7 @@ const USER_COLUMN_MIGRATIONS: Array<{ name: string; sql: string }> = [
   { name: 'lifetime_points', sql: 'ALTER TABLE users ADD COLUMN lifetime_points INTEGER NOT NULL DEFAULT 0 CHECK (lifetime_points >= 0)' },
   { name: 'verified_until', sql: 'ALTER TABLE users ADD COLUMN verified_until TEXT' },
   { name: 'premium_badge_until', sql: 'ALTER TABLE users ADD COLUMN premium_badge_until TEXT' },
+  { name: 'is_demo_account', sql: 'ALTER TABLE users ADD COLUMN is_demo_account INTEGER NOT NULL DEFAULT 0 CHECK (is_demo_account IN (0, 1))' },
 ];
 
 const ensureServiceColumns = (): void => {
@@ -219,7 +220,7 @@ const migrateUserRoleConstraint = (): void => {
           parent_photo, parent_approval_token, account_status, github_url,
           linkedin_url, website_url, is_available, is_featured, is_verified,
           featured_until, avg_response_hours, token_invalid_before,
-          profile_complete, is_active, created_at, updated_at
+          profile_complete, is_demo_account, is_active, created_at, updated_at
         )
         SELECT
           id, name, email, password_hash, phone, whatsapp_number, role, bio,
@@ -227,7 +228,7 @@ const migrateUserRoleConstraint = (): void => {
           parent_photo, parent_approval_token, account_status, github_url,
           linkedin_url, website_url, is_available, is_featured, is_verified,
           featured_until, avg_response_hours, token_invalid_before,
-          profile_complete, is_active, created_at, updated_at
+          profile_complete, is_demo_account, is_active, created_at, updated_at
         FROM users;
       `);
       db.exec('DROP TABLE users;');

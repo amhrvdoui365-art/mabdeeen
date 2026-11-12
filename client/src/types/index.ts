@@ -248,6 +248,7 @@ export interface AdminUser {
   isAvailable: boolean;
   isFeatured: boolean;
   isVerified: boolean;
+  isDemoAccount: boolean;
   featuredUntil: string | null;
   avgResponseHours: number | null;
   createdAt: string;
