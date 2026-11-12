@@ -179,19 +179,22 @@ const buildSearchClauses = (filters: SearchFreelancersFilters) => {
   const params: SQLInputValue[] = [];
 
   if (filters.q) {
-    const like = `%${filters.q}%`;
-    clauses.push(`(
-      u.name LIKE ?
-      OR u.title LIKE ?
-      OR u.bio LIKE ?
-      OR EXISTS (
-        SELECT 1
-        FROM user_skills qus
-        JOIN skills qsk ON qsk.id = qus.skill_id
-        WHERE qus.user_id = u.id AND qsk.name LIKE ?
-      )
-    )`);
-    params.push(like, like, like, like);
+    const terms = filters.q.trim().split(/\s+/).filter(Boolean);
+    for (const term of terms) {
+      const like = `%${term.replace(/[\\%_]/g, '\\$&')}%`;
+      clauses.push(`(
+        u.name LIKE ? ESCAPE '\\'
+        OR u.title LIKE ? ESCAPE '\\'
+        OR u.bio LIKE ? ESCAPE '\\'
+        OR EXISTS (
+          SELECT 1
+          FROM user_skills qus
+          JOIN skills qsk ON qsk.id = qus.skill_id
+          WHERE qus.user_id = u.id AND qsk.name LIKE ? ESCAPE '\\'
+        )
+      )`);
+      params.push(like, like, like, like);
+    }
   }
 
   if (filters.skillId) {
@@ -203,8 +206,8 @@ const buildSearchClauses = (filters: SearchFreelancersFilters) => {
   }
 
   if (filters.location) {
-    clauses.push('u.location LIKE ?');
-    params.push(`%${filters.location}%`);
+    clauses.push("u.location LIKE ? ESCAPE '\\'");
+    params.push(`%${filters.location.replace(/[\\%_]/g, '\\$&')}%`);
   }
 
   if (filters.governorate) {
@@ -261,13 +264,13 @@ const buildSearchClauses = (filters: SearchFreelancersFilters) => {
 const sortClause = (sort: SearchFreelancersFilters['sort']): string => {
   switch (sort) {
     case 'newest':
-      return "CASE WHEN u.is_featured = 1 AND (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) THEN 1 ELSE 0 END DESC, u.created_at DESC";
+      return 'u.created_at DESC';
     case 'rating':
-      return "CASE WHEN u.is_featured = 1 AND (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) THEN 1 ELSE 0 END DESC, COALESCE(s.avg_rating, 0) DESC, COALESCE(s.review_count, 0) DESC, u.created_at DESC";
+      return 'COALESCE(s.avg_rating, 0) DESC, COALESCE(s.review_count, 0) DESC, u.created_at DESC';
     case 'budget_low':
-      return "CASE WHEN u.is_featured = 1 AND (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) THEN 1 ELSE 0 END DESC, CASE WHEN u.min_budget IS NULL THEN 1 ELSE 0 END ASC, u.min_budget ASC, u.created_at DESC";
+      return 'CASE WHEN u.min_budget IS NULL THEN 1 ELSE 0 END ASC, u.min_budget ASC, u.created_at DESC';
     case 'response':
-      return "CASE WHEN u.is_featured = 1 AND (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) THEN 1 ELSE 0 END DESC, CASE WHEN u.avg_response_hours IS NULL THEN 1 ELSE 0 END ASC, u.avg_response_hours ASC, u.created_at DESC";
+      return 'CASE WHEN u.avg_response_hours IS NULL THEN 1 ELSE 0 END ASC, u.avg_response_hours ASC, u.created_at DESC';
     default:
       return "CASE WHEN u.is_featured = 1 AND (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now')) THEN 1 ELSE 0 END DESC, COALESCE(s.avg_rating, 0) DESC, u.created_at DESC";
   }

@@ -13,10 +13,16 @@ import { formatPoints, formatDate } from '@/lib/utils';
 import { servicesApi } from '@/services/services.service';
 import type { MicroService } from '@/types';
 
-const searchableText = (service: MicroService) =>
-  [service.title, service.description, service.category, service.freelancerName]
-    .join(' ')
-    .toLocaleLowerCase('ar');
+const normalizeSearchText = (value: string) => value
+  .normalize('NFKC')
+  .toLocaleLowerCase('ar')
+  .replace(/[\u064B-\u065F\u0670\u0640]/g, '')
+  .replace(/[أإآ]/g, 'ا')
+  .replace(/ى/g, 'ي');
+
+const searchableText = (service: MicroService) => normalizeSearchText(
+  [service.title, service.description, service.category, service.freelancerName].join(' '),
+);
 
 const ServiceCard = ({ service, allowRequest }: { service: MicroService; allowRequest: boolean }) => {
   const preview = service.media.find((media) => media.type === 'image' || media.type === 'video');
@@ -52,9 +58,9 @@ export const ServicesPage = () => {
   const services = servicesQuery.data ?? [];
   const categories = useMemo(() => ['الكل', ...Array.from(new Set(services.map((item) => item.category.trim()).filter(Boolean))).sort((a, b) => a.localeCompare(b, 'ar'))], [services]);
   const visibleServices = useMemo(() => {
-    const term = search.trim().toLocaleLowerCase('ar');
-    return services.filter((service) => (category === 'الكل' || service.category.trim() === category) && (!term || searchableText(service).includes(term)))
-      .sort((a, b) => sort === 'price-low' ? a.price - b.price : sort === 'price-high' ? b.price - a.price : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const terms = normalizeSearchText(search.trim()).split(/\s+/).filter(Boolean);
+    return services.filter((service) => (category === 'الكل' || service.category.trim() === category) && terms.every((term) => searchableText(service).includes(term)))
+      .sort((a, b) => sort === 'price-low' ? a.price - b.price || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : sort === 'price-high' ? b.price - a.price || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime() : new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [services, search, category, sort]);
 
   return <div dir="rtl" className="min-h-[70vh] bg-slate-50">

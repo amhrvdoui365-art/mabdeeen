@@ -195,6 +195,12 @@ export const HomePage = () => {
     totalPages: 1,
   };
 
+  useEffect(() => {
+    if (!freelancersQuery.isPlaceholderData && data && page > data.pagination.totalPages) {
+      setPage(data.pagination.totalPages);
+    }
+  }, [data, freelancersQuery.isPlaceholderData, page]);
+
   const resetFilters = () => {
     setQ('');
     setSkill('');
