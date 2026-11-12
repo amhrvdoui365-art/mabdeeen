@@ -1,8 +1,12 @@
-import { ArrowUpLeft, BookOpenCheck, Heart, ShieldCheck, Sparkles } from 'lucide-react';
+import { ArrowUpLeft, BookOpenCheck, Heart, Share2, ShieldCheck, Sparkles } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { SharePlatformModal } from '@/components/common/SharePlatformModal';
 import { Logo } from './Logo';
 
 export const Footer = () => {
+  const [shareOpen, setShareOpen] = useState(false);
+
   return (
     <footer className="relative mt-20 overflow-hidden border-t border-slate-100 bg-white text-slate-700">
       <div className="pointer-events-none absolute -inset-e-20 -top-32 size-72 rounded-full bg-sky-100/60 blur-3xl" />
@@ -19,6 +23,9 @@ export const Footer = () => {
             <ShieldCheck className="size-4 text-emerald-600" />
             مجاني بالكامل — بدون عمولة
           </div>
+          <button type="button" onClick={() => setShareOpen(true)} className="mt-4 inline-flex min-h-11 items-center gap-2 rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm transition hover:bg-brand-800">
+            <Share2 className="size-4" />شارك منصة مبدعين
+          </button>
         </div>
 
         <div>
@@ -96,6 +103,7 @@ export const Footer = () => {
           </p>
         </div>
       </div>
+      <SharePlatformModal open={shareOpen} onClose={() => setShareOpen(false)} />
     </footer>
   );
 };
