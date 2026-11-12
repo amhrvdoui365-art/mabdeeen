@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { api } from '@/services/api';
 
-export const GitHubAuthButton = ({ returnTo }: { returnTo?: string }) => {
+type GitHubAccountType = 'Freelancer' | 'Buyer' | 'Parent';
+
+export const GitHubAuthButton = ({ returnTo, accountType }: { returnTo?: string; accountType?: GitHubAccountType }) => {
   const [pending, setPending] = useState(false);
 
   const startLogin = () => {
     const url = new URL(api.getUri({ url: '/auth/github' }), window.location.origin);
     if (returnTo) url.searchParams.set('returnTo', returnTo);
+    if (accountType) url.searchParams.set('accountType', accountType);
     setPending(true);
     // Use the current tab so the OAuth callback completes the same app session
     // and is not isolated in a popup by the browser's COOP policy.

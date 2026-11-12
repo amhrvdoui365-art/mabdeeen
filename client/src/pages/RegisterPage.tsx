@@ -139,7 +139,7 @@ export const RegisterPage = () => {
       <form onSubmit={submit} className="space-y-5">
         {githubError ? (
           <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-            {githubError === 'cancelled' ? 'تم إلغاء التسجيل باستخدام GitHub.' : githubError === 'configuration' ? 'إعدادات GitHub OAuth غير مقبولة. راجع Client ID وClient Secret وعنوان Callback في إعدادات OAuth App.' : 'تعذر إكمال التسجيل عبر GitHub. حاول مرة أخرى، وإذا تكرر الخطأ راجع سجل السيرفر.'}
+            {githubError === 'cancelled' ? 'تم إلغاء التسجيل باستخدام GitHub.' : githubError === 'configuration' ? 'إعدادات GitHub OAuth غير مقبولة. راجع Client ID وClient Secret وعنوان Callback في إعدادات OAuth App.' : githubError === 'account_type_mismatch' ? 'هذا البريد مرتبط بحساب من نوع آخر بالفعل. سجّل الدخول إلى الحساب الحالي، أو استخدم بريدًا غير مرتبط بحساب مبدعين.' : 'تعذر إكمال التسجيل عبر GitHub. حاول مرة أخرى، وإذا تكرر الخطأ راجع سجل السيرفر.'}
           </div>
         ) : null}
         {serverError ? (
@@ -346,13 +346,13 @@ export const RegisterPage = () => {
         <span className="text-xs font-semibold text-slate-400">أو أنشئ حسابك باستخدام</span>
         <span className="h-px flex-1 bg-slate-200" />
       </div>
-      <GoogleAuthButton onSuccess={handleGoogleSuccess} />
+      <GoogleAuthButton onSuccess={handleGoogleSuccess} accountType={accountType} />
       <div className="my-4 flex items-center gap-3" aria-hidden="true">
         <span className="h-px flex-1 bg-slate-200" />
         <span className="text-xs font-semibold text-slate-400">أو أنشئ حسابك باستخدام</span>
         <span className="h-px flex-1 bg-slate-200" />
       </div>
-      <GitHubAuthButton returnTo={returnPath} />
+      <GitHubAuthButton returnTo={returnPath} accountType={accountType} />
     </AuthLayout>
   );
 };

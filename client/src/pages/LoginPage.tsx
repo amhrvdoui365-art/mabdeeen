@@ -118,7 +118,7 @@ export const LoginPage = () => {
         ) : null}
         {githubError ? (
           <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
-            {githubError === 'cancelled' ? 'تم إلغاء تسجيل الدخول باستخدام GitHub.' : githubError === 'configuration' ? 'إعدادات GitHub OAuth غير مقبولة. راجع Client ID وClient Secret وعنوان Callback في إعدادات OAuth App.' : 'تعذر إكمال تسجيل الدخول عبر GitHub. حاول مرة أخرى، وإذا تكرر الخطأ راجع سجل السيرفر.'}
+            {githubError === 'cancelled' ? 'تم إلغاء تسجيل الدخول باستخدام GitHub.' : githubError === 'configuration' ? 'إعدادات GitHub OAuth غير مقبولة. راجع Client ID وClient Secret وعنوان Callback في إعدادات OAuth App.' : githubError === 'account_type_mismatch' ? 'هذا البريد مرتبط بحساب من نوع آخر بالفعل. سجّل الدخول باستخدام نوع الحساب الحالي.' : 'تعذر إكمال تسجيل الدخول عبر GitHub. حاول مرة أخرى، وإذا تكرر الخطأ راجع سجل السيرفر.'}
           </div>
         ) : null}
         {serverError ? (

@@ -5,7 +5,9 @@ import { getErrorMessage } from '@/services/api';
 import { authApi } from '@/services/auth.service';
 import type { AuthUser } from '@/types';
 
-export const GoogleAuthButton = ({ onSuccess }: { onSuccess: (user: AuthUser) => void }) => {
+type GoogleAccountType = 'Freelancer' | 'Buyer' | 'Parent';
+
+export const GoogleAuthButton = ({ onSuccess, accountType }: { onSuccess: (user: AuthUser) => void; accountType?: GoogleAccountType }) => {
   const { completeOAuthLogin } = useAuth();
   const buttonRef = useRef<HTMLDivElement>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
@@ -27,7 +29,12 @@ export const GoogleAuthButton = ({ onSuccess }: { onSuccess: (user: AuthUser) =>
           setBusy(true);
           setError(null);
           try {
-            const result = await authApi.googleVerify(credential);
+            const result = await authApi.googleVerify(credential, accountType);
+            if (accountType && result.user.role !== accountType) {
+              const roleName = result.user.role === 'Freelancer' ? 'مستقل' : result.user.role === 'Parent' ? 'ولي أمر' : 'مشتري';
+              setError(`هذا البريد مرتبط بحساب ${roleName} بالفعل. سجّل الدخول إلى الحساب الحالي لإنشاء حساب جديد بنوع مختلف.`);
+              return;
+            }
             const user = await completeOAuthLogin(result.token);
             callbackRef.current(user);
           } catch (authError) {
@@ -46,7 +53,7 @@ export const GoogleAuthButton = ({ onSuccess }: { onSuccess: (user: AuthUser) =>
       active = false;
       cleanupRef.current?.();
     };
-  }, [completeOAuthLogin]);
+  }, [accountType, completeOAuthLogin]);
 
   return (
     <div>

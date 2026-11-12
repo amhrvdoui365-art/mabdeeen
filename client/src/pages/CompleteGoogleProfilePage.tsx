@@ -13,7 +13,9 @@ export const CompleteGoogleProfilePage = () => {
   const { user, isLoading, completeGoogleProfile } = useAuth();
   const navigate = useNavigate();
   const [name, setName] = useState(user?.name ?? '');
-  const [accountType, setAccountType] = useState<'Freelancer' | 'Buyer' | 'Parent'>('Freelancer');
+  const [accountType, setAccountType] = useState<'Freelancer' | 'Buyer' | 'Parent'>(
+    user?.role === 'Buyer' || user?.role === 'Parent' ? user.role : 'Freelancer',
+  );
   const [title, setTitle] = useState('');
   const [location, setLocation] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -21,7 +23,10 @@ export const CompleteGoogleProfilePage = () => {
 
   useEffect(() => {
     if (user?.name) setName(user.name);
-  }, [user?.name]);
+    if (user?.role === 'Buyer' || user?.role === 'Parent' || user?.role === 'Freelancer') {
+      setAccountType(user.role);
+    }
+  }, [user?.name, user?.role]);
 
   if (isLoading) return <PageLoader label="جارٍ التحقق من الحساب..." />;
   if (!user) return <Navigate to="/login" replace />;

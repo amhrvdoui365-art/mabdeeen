@@ -6,6 +6,7 @@ import {
   findUserByEmail,
   findUserById,
   setOwnPassword,
+  updateIncompleteOAuthAccountType,
   toPublicUser,
   type UserRow,
 } from '../models/user.model';
@@ -106,13 +107,22 @@ export const changeOwnPassword = async (userId: string, currentPassword: string,
   return { changed: true, sessionsRevoked: true };
 };
 
-export const loginWithOAuth = async (emailInput: string, nameInput: string) => {
+export const loginWithOAuth = async (
+  emailInput: string,
+  nameInput: string,
+  accountType?: 'Freelancer' | 'Buyer' | 'Parent',
+) => {
   const email = emailInput.trim().toLowerCase();
   const existingUser = await findUserByEmail(email);
 
   if (existingUser) {
     if (!existingUser.is_active) {
       throw new AppError('هذا الحساب موقوف، يرجى التواصل مع الإدارة', 403);
+    }
+
+    if (accountType && !existingUser.profile_complete && existingUser.role !== accountType) {
+      const updatedUser = updateIncompleteOAuthAccountType(existingUser.id, accountType);
+      if (updatedUser) return buildAuthResult(updatedUser);
     }
 
     return buildAuthResult(existingUser);
@@ -126,7 +136,7 @@ export const loginWithOAuth = async (emailInput: string, nameInput: string) => {
       name: safeName.length >= 2 ? safeName : `${safeName} User`,
       email,
       passwordHash,
-      role: 'Freelancer',
+      role: accountType ?? 'Freelancer',
       title: null,
       location: null,
       bio: null,
@@ -140,6 +150,10 @@ export const loginWithOAuth = async (emailInput: string, nameInput: string) => {
     const racedUser = await findUserByEmail(email);
     if (!racedUser) throw error;
     if (!racedUser.is_active) throw new AppError('هذا الحساب موقوف، يرجى التواصل مع الإدارة', 403);
+    if (accountType && !racedUser.profile_complete && racedUser.role !== accountType) {
+      const updatedUser = updateIncompleteOAuthAccountType(racedUser.id, accountType);
+      if (updatedUser) return buildAuthResult(updatedUser);
+    }
     return buildAuthResult(racedUser);
   }
 };

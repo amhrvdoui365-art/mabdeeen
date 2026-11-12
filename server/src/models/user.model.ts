@@ -149,3 +149,14 @@ export const completeGoogleProfileForUser = (
   );
   return (db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(userId) as UserRow | undefined) ?? null;
 };
+
+export const updateIncompleteOAuthAccountType = (
+  userId: string,
+  role: Exclude<UserRole, 'Admin'>,
+): UserRow | null => {
+  db.prepare(`UPDATE users SET role = ?, title = NULL, location = NULL,
+      account_status = CASE WHEN ? = 'Freelancer' THEN 'PENDING_PARENT_APPROVAL' ELSE 'ACTIVE' END,
+      updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND profile_complete = 0 AND role IN ('Freelancer', 'Buyer', 'Parent')`).run(role, role, userId);
+  return (db.prepare('SELECT * FROM users WHERE id = ? LIMIT 1').get(userId) as UserRow | undefined) ?? null;
+};

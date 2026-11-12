@@ -114,6 +114,26 @@ const safeReturnPath = (value: unknown): string => {
   } catch { return '/'; }
 };
 
+type OAuthAccountType = 'Freelancer' | 'Buyer' | 'Parent';
+
+const oauthAccountType = (value: unknown): OAuthAccountType | undefined =>
+  value === 'Freelancer' || value === 'Buyer' || value === 'Parent' ? value : undefined;
+
+const encodeOAuthStateData = (returnPath: string, accountType?: OAuthAccountType): string =>
+  Buffer.from(JSON.stringify({ returnPath, accountType })).toString('base64url');
+
+const decodeOAuthStateData = (encoded: string | undefined): { returnPath: string; accountType?: OAuthAccountType } => {
+  if (!encoded) return { returnPath: '' };
+  const decoded = Buffer.from(encoded, 'base64url').toString('utf8');
+  try {
+    const value = JSON.parse(decoded) as { returnPath?: unknown; accountType?: unknown };
+    return { returnPath: safeReturnPath(value.returnPath), accountType: oauthAccountType(value.accountType) };
+  } catch {
+    // Accept the return-path-only cookie format used by OAuth attempts started before this update.
+    return { returnPath: safeReturnPath(decoded) };
+  }
+};
+
 const clearGoogleStateCookie = (res: Response) => res.clearCookie(GOOGLE_STATE_COOKIE, {
   httpOnly: true,
   sameSite: 'lax',
@@ -139,7 +159,8 @@ export const githubStart = (req: Request, res: Response): void => {
   const { clientId, callbackUrl } = githubConfig();
   const state = randomBytes(32).toString('base64url');
   const returnPath = safeReturnPath(req.query.returnTo);
-  res.cookie(GITHUB_STATE_COOKIE, `${state}.${Buffer.from(returnPath).toString('base64url')}`, {
+  const requestedAccountType = oauthAccountType(req.query.accountType);
+  res.cookie(GITHUB_STATE_COOKIE, `${state}.${encodeOAuthStateData(returnPath, requestedAccountType)}`, {
     httpOnly: true,
     sameSite: 'lax',
     secure: env.NODE_ENV === 'production',
@@ -171,9 +192,9 @@ interface GithubEmail {
 }
 
 export const githubCallback = async (req: Request, res: Response): Promise<void> => {
-  const returnToLogin = (reason: 'cancelled' | 'failed' | 'configuration') => {
+  const returnToLogin = (reason: 'cancelled' | 'failed' | 'configuration' | 'account_type_mismatch') => {
     clearGithubStateCookie(res);
-    const loginUrl = new URL('/login', env.OAUTH_FRONTEND_URL);
+    const loginUrl = new URL(reason === 'account_type_mismatch' ? '/register' : '/login', env.OAUTH_FRONTEND_URL);
     loginUrl.searchParams.set('github_error', reason);
     res.redirect(303, loginUrl.toString());
   };
@@ -246,10 +267,15 @@ export const githubCallback = async (req: Request, res: Response): Promise<void>
       throw new AppError('GitHub account has no verified email', 401);
     }
 
-    const result = await loginWithOAuth(email, githubUser.name?.trim() || githubUser.login);
+    const oauthData = decodeOAuthStateData(encodedReturnPath);
+    const result = await loginWithOAuth(email, githubUser.name?.trim() || githubUser.login, oauthData.accountType);
+    if (oauthData.accountType && result.user.role !== oauthData.accountType) {
+      returnToLogin('account_type_mismatch');
+      return;
+    }
     clearGithubStateCookie(res);
     const redirectUrl = new URL('/auth/github/callback', env.OAUTH_FRONTEND_URL);
-    const returnPath = safeReturnPath(Buffer.from(encodedReturnPath ?? '', 'base64url').toString('utf8'));
+    const returnPath = oauthData.returnPath;
     if (returnPath) redirectUrl.searchParams.set('returnTo', returnPath);
     redirectUrl.hash = new URLSearchParams({ token: result.token }).toString();
     res.redirect(303, redirectUrl.toString());
@@ -263,7 +289,7 @@ export const googleStart = (req: Request, res: Response): void => {
   const { clientId, callbackUrl } = googleConfig();
   const state = randomBytes(32).toString('base64url');
   const returnPath = safeReturnPath(req.query.returnTo);
-  const cookiePayload = `${state}.${Buffer.from(returnPath).toString('base64url')}`;
+  const cookiePayload = `${state}.${encodeOAuthStateData(returnPath, oauthAccountType(req.query.accountType))}`;
 
   res.cookie(GOOGLE_STATE_COOKIE, cookiePayload, {
     httpOnly: true,
@@ -300,7 +326,7 @@ export const googleNonce = (req: Request, res: Response): void => {
 };
 
 export const googleVerify = async (
-  req: Request<Record<string, string>, unknown, { credential: string }>,
+  req: Request<Record<string, string>, unknown, { credential: string; accountType?: OAuthAccountType }>,
   res: Response,
 ): Promise<void> => {
   const nonce = cookieValue(req, GOOGLE_NONCE_COOKIE);
@@ -308,7 +334,7 @@ export const googleVerify = async (
 
   const claims = await verifyGoogleIdentityToken(req.body.credential, googleClientId(), nonce);
   clearGoogleNonceCookie(res);
-  const result = await loginWithGoogle(claims.email!, claims.name || claims.email!.split('@')[0]);
+  const result = await loginWithGoogle(claims.email!, claims.name || claims.email!.split('@')[0], req.body.accountType);
   res.status(200).json({ success: true, data: result });
 };
 
@@ -320,9 +346,9 @@ interface GoogleUserInfo {
 }
 
 export const googleCallback = async (req: Request, res: Response): Promise<void> => {
-  const returnToLogin = (reason: 'cancelled' | 'failed' | 'invalid_client') => {
+  const returnToLogin = (reason: 'cancelled' | 'failed' | 'invalid_client' | 'account_type_mismatch') => {
     clearGoogleStateCookie(res);
-    const loginUrl = new URL('/login', env.OAUTH_FRONTEND_URL);
+    const loginUrl = new URL(reason === 'account_type_mismatch' ? '/register' : '/login', env.OAUTH_FRONTEND_URL);
     loginUrl.searchParams.set('google_error', reason);
     res.redirect(303, loginUrl.toString());
   };
@@ -383,10 +409,15 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
       throw new AppError('Google account does not have a verified email', 401);
     }
 
-    const result = await loginWithGoogle(profile.email, profile.name || profile.email.split('@')[0]);
+    const oauthData = decodeOAuthStateData(encodedReturnPath);
+    const result = await loginWithGoogle(profile.email, profile.name || profile.email.split('@')[0], oauthData.accountType);
+    if (oauthData.accountType && result.user.role !== oauthData.accountType) {
+      returnToLogin('account_type_mismatch');
+      return;
+    }
     clearGoogleStateCookie(res);
     const redirectUrl = new URL('/auth/google/callback', env.OAUTH_FRONTEND_URL);
-    const returnPath = safeReturnPath(Buffer.from(encodedReturnPath ?? '', 'base64url').toString('utf8'));
+    const returnPath = oauthData.returnPath;
     if (returnPath) redirectUrl.searchParams.set('returnTo', returnPath);
     redirectUrl.hash = new URLSearchParams({ token: result.token }).toString();
     res.redirect(303, redirectUrl.toString());

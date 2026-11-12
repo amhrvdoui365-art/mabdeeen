@@ -28,8 +28,8 @@ export const authApi = {
     return unwrap<{ clientId: string; nonce: string }>(response);
   },
 
-  googleVerify: async (credential: string): Promise<AuthResult> => {
-    const response = await api.post('/auth/google/verify', { credential });
+  googleVerify: async (credential: string, accountType?: RegisterPayload['accountType']): Promise<AuthResult> => {
+    const response = await api.post('/auth/google/verify', { credential, ...(accountType ? { accountType } : {}) });
     return unwrap<AuthResult>(response);
   },
 

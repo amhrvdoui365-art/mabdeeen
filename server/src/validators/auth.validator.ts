@@ -92,6 +92,7 @@ export const googleProfileCompletionSchema = z.object({
 
 export const googleCredentialSchema = z.object({
   credential: z.string().min(100).max(12_000),
+  accountType: z.enum(['Freelancer', 'Buyer', 'Parent']).optional(),
 });
 
 export type RegisterInput = z.infer<typeof registerSchema>;
