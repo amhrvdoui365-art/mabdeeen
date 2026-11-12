@@ -34,6 +34,23 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
   }
 
   const requestPath = req.originalUrl.split('?')[0];
+  const isDemoSession = payload.demo === true;
+  if (isDemoSession && user.role === 'Admin') {
+    const isCommunityOrArticleRead = req.method === 'GET' && (
+      requestPath === '/api/auth/me' ||
+      requestPath === '/api/community/posts' ||
+      /^\/api\/community\/posts\/[^/]+(?:\/comments)?$/.test(requestPath) ||
+      requestPath === '/api/articles' ||
+      /^\/api\/articles\/[^/]+(?:\/comments)?$/.test(requestPath)
+    );
+    if (!isCommunityOrArticleRead) {
+      throw new AppError('حساب الإدارة التجريبي مخصص لمعاينة المجتمع والمقالات فقط.', 403);
+    }
+  }
+
+  if (isDemoSession && requestPath.endsWith('/auth/change-password')) {
+    throw new AppError('لا يمكن تغيير كلمة مرور حساب العرض التجريبي.', 403);
+  }
   const isGoogleProfileCompletion = requestPath.endsWith('/auth/google/complete-profile') && !user.profile_complete;
   const allowedForPendingAccount = requestPath.endsWith('/auth/me') ||
     requestPath.endsWith('/parent/verification/start') ||
@@ -75,6 +92,7 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
     email: user.email,
     role: user.role,
     ...(payload.impersonatedBy ? { impersonatedBy: payload.impersonatedBy } : {}),
+    ...(isDemoSession ? { isDemo: true } : {}),
   };
 
   next();
@@ -88,7 +106,7 @@ export const optionalAuthenticate = asyncHandler(async (req, _res, next) => {
     const payload = verifyToken(authorization.slice(7).trim());
     const user = await findUserById(payload.sub);
     if (user?.is_active && (!user.token_invalid_before || payload.iat === undefined || payload.iat * 1000 >= Date.parse(user.token_invalid_before))) {
-      req.user = { id: user.id, name: user.name, email: user.email, role: user.role };
+      req.user = { id: user.id, name: user.name, email: user.email, role: user.role, ...(payload.demo ? { isDemo: true } : {}) };
     }
   } catch {
     // Public pages remain available if a saved optional session has expired.

@@ -9,10 +9,13 @@ import {
   loginWithOAuth,
   registerAccount,
   changeOwnPassword,
+  getDemoLoginOptions,
+  loginDemo as loginDemoService,
 } from '../services/auth.service';
 import { AppError } from '../utils/app-error';
 import { verifyGoogleIdentityToken } from '../services/google-identity.service';
 import { finishAdminImpersonation } from '../services/admin-operations.service';
+import type { UserRole } from '../types/auth';
 import type { GoogleProfileCompletionInput, LoginInput, RegisterInput } from '../validators/auth.validator';
 
 export const register = async (
@@ -41,12 +44,26 @@ export const login = async (
   });
 };
 
+export const demoOptions = async (_req: Request, res: Response): Promise<void> => {
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(200).json({ success: true, data: await getDemoLoginOptions() });
+};
+
+export const demoLogin = async (
+  req: Request,
+  res: Response,
+): Promise<void> => {
+  const result = await loginDemoService(req.params.role as UserRole);
+  res.setHeader('Cache-Control', 'no-store');
+  res.status(200).json({ success: true, data: result });
+};
+
 export const me = async (req: Request, res: Response): Promise<void> => {
   const user = await getCurrentUser(req.user!.id);
 
   res.status(200).json({
     success: true,
-    data: { user },
+    data: { user: { ...user, ...(req.user?.isDemo ? { isDemo: true } : {}) } },
   });
 };
 

@@ -1,4 +1,4 @@
-import type { AuthResult, AuthUser } from '@/types';
+import type { AuthResult, AuthUser, Role } from '@/types';
 import { api, unwrap } from './api';
 
 export interface LoginPayload {
@@ -23,6 +23,16 @@ export interface GoogleProfileCompletionPayload {
 }
 
 export const authApi = {
+  demoOptions: async (): Promise<{ enabled: boolean }> => {
+    const response = await api.get('/auth/demo/options');
+    return unwrap<{ enabled: boolean }>(response);
+  },
+
+  demoLogin: async (role: Role): Promise<AuthResult> => {
+    const response = await api.post(`/auth/demo/${role}`);
+    return unwrap<AuthResult>(response);
+  },
+
   googleNonce: async (): Promise<{ clientId: string; nonce: string }> => {
     const response = await api.get('/auth/google/nonce');
     return unwrap<{ clientId: string; nonce: string }>(response);

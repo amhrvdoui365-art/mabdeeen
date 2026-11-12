@@ -12,6 +12,8 @@ import {
 } from '../models/user.model';
 import { AppError } from '../utils/app-error';
 import { signToken } from '../utils/jwt';
+import { env } from '../config/env';
+import type { UserRole } from '../types/auth';
 import type { GoogleProfileCompletionInput, LoginInput, RegisterInput } from '../validators/auth.validator';
 
 const BCRYPT_ROUNDS = 12;
@@ -27,15 +29,49 @@ const isUniqueViolation = (error: unknown): boolean => {
   );
 };
 
-const buildAuthResult = (user: UserRow) => {
+const buildAuthResult = (user: UserRow, isDemo = false) => {
   return {
-    user: toPublicUser(user),
+    user: { ...toPublicUser(user), ...(isDemo ? { isDemo: true } : {}) },
     token: signToken({
       sub: user.id,
       email: user.email,
       role: user.role,
-    }),
+      ...(isDemo ? { demo: true } : {}),
+    }, isDemo ? '2h' : undefined),
   };
+};
+
+const demoAccountIds: Record<UserRole, string | undefined> = {
+  Freelancer: env.DEMO_FREELANCER_USER_ID,
+  Buyer: env.DEMO_BUYER_USER_ID,
+  Parent: env.DEMO_PARENT_USER_ID,
+  Admin: env.DEMO_ADMIN_USER_ID,
+};
+
+export const getDemoLoginOptions = async () => {
+  const roles = Object.keys(demoAccountIds) as UserRole[];
+  if (env.DEMO_MODE_ENABLED !== 'true' || roles.some((role) => !demoAccountIds[role])) return { enabled: false };
+
+  const accounts = await Promise.all(roles.map(async (role) => {
+    const userId = demoAccountIds[role]!;
+    const user = await findUserById(userId);
+    return Boolean(user && user.role === role && user.is_active && user.profile_complete && user.account_status === 'ACTIVE');
+  }));
+  return { enabled: accounts.every(Boolean) };
+};
+
+export const loginDemo = async (role: UserRole) => {
+  if (!(await getDemoLoginOptions()).enabled) {
+    throw new AppError('الدخول التجريبي غير مفعّل أو لم تُجهّز حساباته بعد.', 503);
+  }
+
+  const userId = demoAccountIds[role];
+  const user = userId ? await findUserById(userId) : null;
+  if (!user || user.role !== role || !user.is_active || !user.profile_complete || user.account_status !== 'ACTIVE') {
+    throw new AppError('حساب العرض غير جاهز لهذا الدور. راجع إعدادات حسابات Demo.', 503);
+  }
+
+  return buildAuthResult(user, true);
 };
 
 export const registerAccount = async (input: RegisterInput) => {

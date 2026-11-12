@@ -5,6 +5,7 @@ export interface TokenPayload {
   email: string;
   role: UserRole;
   impersonatedBy?: string;
+  demo?: boolean;
 }
 
 export interface AuthenticatedUser {
@@ -13,4 +14,5 @@ export interface AuthenticatedUser {
   email: string;
   role: UserRole;
   impersonatedBy?: string;
+  isDemo?: boolean;
 }

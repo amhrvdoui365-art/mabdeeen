@@ -10,12 +10,13 @@ import {
 } from 'react';
 import { authApi, type GoogleProfileCompletionPayload, type LoginPayload, type RegisterPayload } from '@/services/auth.service';
 import { tokenStorage } from '@/services/api';
-import type { AuthUser } from '@/types';
+import type { AuthUser, Role } from '@/types';
 
 interface AuthContextValue {
   user: AuthUser | null;
   isLoading: boolean;
   login: (payload: LoginPayload) => Promise<AuthUser>;
+  loginDemo: (role: Role) => Promise<AuthUser>;
   completeOAuthLogin: (token: string) => Promise<AuthUser>;
   completeGoogleProfile: (payload: GoogleProfileCompletionPayload) => Promise<AuthUser>;
   register: (payload: RegisterPayload) => Promise<AuthUser>;
@@ -88,6 +89,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     [queryClient],
   );
 
+  const loginDemo = useCallback(async (role: Role) => {
+    const result = await authApi.demoLogin(role);
+    queryClient.clear();
+    tokenStorage.set(result.token);
+    setUser({ ...result.user, isDemo: true });
+    return { ...result.user, isDemo: true };
+  }, [queryClient]);
+
   const completeOAuthLogin = useCallback(async (token: string) => {
     tokenStorage.set(token);
     queryClient.clear();
@@ -137,8 +146,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   const value = useMemo(
-    () => ({ user, isLoading, login, completeOAuthLogin, completeGoogleProfile, register, logout, refreshUser }),
-    [user, isLoading, login, completeOAuthLogin, completeGoogleProfile, register, logout, refreshUser],
+    () => ({ user, isLoading, login, loginDemo, completeOAuthLogin, completeGoogleProfile, register, logout, refreshUser }),
+    [user, isLoading, login, loginDemo, completeOAuthLogin, completeGoogleProfile, register, logout, refreshUser],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

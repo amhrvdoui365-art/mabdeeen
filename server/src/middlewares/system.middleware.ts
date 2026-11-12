@@ -65,7 +65,7 @@ export const maintenanceMiddleware = (req: Request, res: Response, next: NextFun
 
   const payload = readPayload(req);
 
-  if (payload?.role === 'Admin') {
+  if (payload?.role === 'Admin' && !payload.demo) {
     next();
     return;
   }
@@ -90,7 +90,7 @@ export const sessionTrackingMiddleware = (req: Request, _res: Response, next: Ne
   }
 
   const payload = readPayload(req);
-  const userId = payload?.role === 'Admin' && payload.sub ? null : (payload?.sub ?? null);
+  const userId = payload?.role === 'Admin' && !payload.demo && payload.sub ? null : (payload?.sub ?? null);
   const ip = req.ip ?? 'unknown';
   const userAgent = req.get('user-agent') ?? '';
   const key = `${userId ?? 'anon'}|${ip}`;

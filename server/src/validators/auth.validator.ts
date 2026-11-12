@@ -95,6 +95,10 @@ export const googleCredentialSchema = z.object({
   accountType: z.enum(['Freelancer', 'Buyer', 'Parent']).optional(),
 });
 
+export const demoLoginParamsSchema = z.object({
+  role: z.enum(['Freelancer', 'Buyer', 'Parent', 'Admin']),
+});
+
 export type RegisterInput = z.infer<typeof registerSchema>;
 export type LoginInput = z.infer<typeof loginSchema>;
 export type GoogleProfileCompletionInput = z.infer<typeof googleProfileCompletionSchema>;
