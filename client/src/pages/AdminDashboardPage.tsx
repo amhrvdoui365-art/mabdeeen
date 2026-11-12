@@ -24,6 +24,7 @@ import {
   Waves,
   Wrench,
   KeyRound,
+  Search,
   Trash2,
 } from 'lucide-react';
 import { lazy, Suspense, useEffect, useState } from 'react';
@@ -57,28 +58,36 @@ const AdminAuditPanel = lazy(() => import('@/components/dashboard/AdminAuditPane
 const AdminPlatformWipePanel = lazy(() => import('@/components/dashboard/AdminPlatformWipePanel').then((module) => ({ default: module.AdminPlatformWipePanel })));
 
 const TABS = [
-  { id: 'security', label: 'أمان الحساب', icon: KeyRound },
-  { id: 'danger-zone', label: 'مسح بيانات المنصة', icon: Trash2 },
   { id: 'overview', label: 'نظرة عامة', icon: LayoutDashboard },
   { id: 'users', label: 'المستخدمون', icon: Users },
-  { id: 'system', label: 'النظام والطوارئ', icon: Activity },
-  { id: 'sessions', label: 'الجلسات والحظر', icon: MonitorSmartphone },
-  { id: 'moderation', label: 'فاحص المحتوى', icon: ShieldAlert },
+  { id: 'parent-verifications', label: 'توثيق أولياء الأمور', icon: UserCheck },
   { id: 'reports', label: 'البلاغات', icon: Flag },
   { id: 'reviews', label: 'التقييمات', icon: MessageSquareText },
-  { id: 'notifications', label: 'الإشعارات', icon: Bell },
+  { id: 'moderation', label: 'فاحص المحتوى', icon: ShieldAlert },
   { id: 'community', label: 'المجتمع', icon: Newspaper },
-  { id: 'parent-verifications', label: 'توثيق أولياء الأمور', icon: UserCheck },
-  { id: 'support', label: 'الدعم الفني والرسائل', icon: Headset },
+  { id: 'articles', label: 'المقالات', icon: FileText },
   { id: 'orders', label: 'الطلبات والنزاعات', icon: ShoppingBag },
   { id: 'services', label: 'مراجعة الخدمات', icon: Wrench },
   { id: 'points', label: 'النقاط والمكافآت', icon: Coins },
-  { id: 'articles', label: 'المقالات', icon: FileText },
+  { id: 'notifications', label: 'الإشعارات', icon: Bell },
+  { id: 'support', label: 'الدعم الفني والرسائل', icon: Headset },
   { id: 'conversations', label: 'مراجعة المحادثات', icon: MessageSquareText },
+  { id: 'system', label: 'النظام والطوارئ', icon: Activity },
+  { id: 'sessions', label: 'الجلسات والحظر', icon: MonitorSmartphone },
+  { id: 'security', label: 'أمان الحساب', icon: KeyRound },
   { id: 'audit', label: 'سجل التدقيق', icon: ScrollText },
+  { id: 'danger-zone', label: 'مسح بيانات المنصة', icon: Trash2 },
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+
+const TAB_GROUPS: { id: string; label: string; ids: TabId[]; sensitive?: boolean }[] = [
+  { id: 'workspace', label: 'الرئيسية', ids: ['overview'] },
+  { id: 'community', label: 'المستخدمون والمحتوى', ids: ['users', 'parent-verifications', 'reports', 'reviews', 'moderation', 'community', 'articles'] },
+  { id: 'operations', label: 'تشغيل المنصة', ids: ['orders', 'services', 'points', 'notifications', 'support', 'conversations'] },
+  { id: 'security', label: 'النظام والأمان', ids: ['system', 'sessions', 'security', 'audit'] },
+  { id: 'danger', label: 'إجراءات حساسة', ids: ['danger-zone'], sensitive: true },
+];
 
 export const AdminDashboardPage = () => {
   const [searchParams] = useSearchParams();
@@ -88,6 +97,7 @@ export const AdminDashboardPage = () => {
     const requested = new URLSearchParams(window.location.search).get('tab');
     return TABS.some((item) => item.id === requested) ? requested as TabId : 'overview';
   });
+  const [sectionSearch, setSectionSearch] = useState('');
 
   useEffect(() => {
     const requested = searchParams.get('tab');
@@ -121,6 +131,20 @@ export const AdminDashboardPage = () => {
   }
 
   const stats = statsQuery.data;
+  const activeTab = TABS.find((item) => item.id === tab) ?? TABS[0];
+  const normalizedSectionSearch = sectionSearch.trim().toLocaleLowerCase('ar');
+  const filteredTabGroups = TAB_GROUPS.map((group) => ({
+    ...group,
+    tabs: TABS.filter((item) => group.ids.includes(item.id) && (!normalizedSectionSearch || item.label.toLocaleLowerCase('ar').includes(normalizedSectionSearch))),
+  })).filter((group) => group.tabs.length > 0);
+  const tabCounts: Partial<Record<TabId, number>> = {
+    reports: stats.pendingReports,
+    moderation: stats.pendingFlags,
+  };
+  const selectTab = (nextTab: TabId) => {
+    setTab(nextTab);
+    setSectionSearch('');
+  };
   const maintenanceActive = settingsQuery.data?.system.maintenanceEnabled ?? false;
   const maxSkillCount = Math.max(
     1,
@@ -171,17 +195,18 @@ export const AdminDashboardPage = () => {
   ];
 
   return (
-    <div className="container-page py-8 sm:py-10">
-      <section className="relative overflow-hidden rounded-4xl border border-slate-100 bg-linear-to-br from-cyan-50 via-white to-sky-50 p-6 text-slate-900 shadow-xl shadow-slate-200/40 sm:p-8">
-        <div className="pointer-events-none absolute -inset-e-16 -top-20 size-64 rounded-full bg-orange-100/60 blur-3xl" />
+    <div dir="rtl" className="container-page py-6 sm:py-9">
+      <section className="relative isolate overflow-hidden rounded-4xl border border-slate-800 bg-linear-to-br from-slate-950 via-slate-900 to-cyan-950 p-6 text-white shadow-2xl shadow-slate-900/15 sm:p-8">
+        <div className="pointer-events-none absolute -inset-e-16 -top-20 size-64 rounded-full bg-cyan-400/15 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -start-16 size-56 rounded-full bg-violet-500/15 blur-3xl" />
         <div className="relative flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <span className="inline-flex items-center gap-2 rounded-full border border-orange-100 bg-orange-50 px-3 py-1 text-xs font-bold text-orange-800">
-              <ShieldCheck className="size-4 text-orange-500" />
+            <span className="inline-flex items-center gap-2 rounded-full border border-white/15 bg-white/10 px-3 py-1.5 text-xs font-bold text-cyan-100">
+              <ShieldCheck className="size-4 text-cyan-300" />
               صلاحيات إدارية
             </span>
-            <h1 className="mt-3 text-2xl font-extrabold sm:text-3xl">لوحة إدارة الدليل</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-600">
+            <h1 className="mt-3 text-2xl font-black tracking-tight sm:text-3xl">لوحة إدارة مبدعين</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-7 text-slate-300">
               تحكم كامل: أزرار طوارئ للنظام، جلسات وعناوين IP، فاحص محتوى آلي،
               وتوثيق أو تعديل أي حساب مباشرة من الجدول.
             </p>
@@ -189,7 +214,7 @@ export const AdminDashboardPage = () => {
           {stats.pendingReports > 0 ? (
             <button
               type="button"
-              onClick={() => setTab('reports')}
+              onClick={() => selectTab('reports')}
               className="inline-flex shrink-0 items-center gap-2 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-800 transition hover:bg-amber-100"
             >
               <AlertTriangle className="size-5 text-amber-600" />
@@ -204,7 +229,7 @@ export const AdminDashboardPage = () => {
         </div>
       </section>
 
-      <div className="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+      <div className="mt-7 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={Users}
           label="إجمالي المستقلين"
@@ -226,9 +251,6 @@ export const AdminDashboardPage = () => {
           hint="تحتاج إلى مراجعة"
           tone={stats.pendingReports > 0 ? 'rose' : 'emerald'}
         />
-      </div>
-
-      <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
         <StatCard
           icon={ShieldCheck}
           label="حسابات موثّقة"
@@ -265,35 +287,63 @@ export const AdminDashboardPage = () => {
             <AlertTriangle className="size-5 shrink-0 text-rose-600" />
             وضع الصيانة العام مفعّل: جميع غير الأدمن يرون صفحة الصيانة الآن.
           </p>
-          <button type="button" onClick={() => setTab('system')} className="btn btn-danger btn-sm">
+          <button type="button" onClick={() => selectTab('system')} className="btn btn-danger btn-sm">
             فتح أزرار الطوارئ
           </button>
         </div>
       ) : null}
 
-      <div className="mt-6 flex gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm">
-        {TABS.map((item) => {
-          const active = tab === item.id;
+      <div className="mt-8 grid min-w-0 gap-5 lg:grid-cols-[16rem_minmax(0,1fr)] lg:items-start">
+        <aside className="min-w-0">
+          <label className="flex items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm lg:hidden">
+            <LayoutDashboard className="size-5 shrink-0 text-brand-700" />
+            <span className="sr-only">اختر قسماً من لوحة الإدارة</span>
+            <select value={tab} onChange={(event) => selectTab(event.target.value as TabId)} className="min-h-10 min-w-0 flex-1 bg-transparent text-sm font-extrabold text-slate-800 outline-none">
+              {TAB_GROUPS.map((group) => <optgroup key={group.id} label={group.label}>
+                {TABS.filter((item) => group.ids.includes(item.id)).map((item) => <option key={item.id} value={item.id}>{item.label}</option>)}
+              </optgroup>)}
+            </select>
+          </label>
 
-          return (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => setTab(item.id)}
-              className={
-                active
-                  ? 'flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl bg-brand-700 px-4 py-2.5 text-sm font-bold text-white shadow-sm'
-                  : 'flex shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-4 py-2.5 text-sm font-bold text-slate-600 transition hover:bg-brand-50 hover:text-brand-800'
-              }
-            >
-              <item.icon className="size-4" />
-              {item.label}
-            </button>
-          );
-        })}
-      </div>
+          <nav aria-label="أقسام لوحة الإدارة" className="sticky top-28 hidden max-h-[calc(100vh-8rem)] overflow-y-auto rounded-3xl border border-slate-200 bg-white p-3 shadow-sm lg:block">
+            <div className="px-2 pb-3 pt-1">
+              <p className="text-xs font-bold text-slate-500">التنقل في اللوحة</p>
+              <div className="relative mt-3">
+                <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
+                <input value={sectionSearch} onChange={(event) => setSectionSearch(event.target.value)} placeholder="ابحث عن قسم..." aria-label="ابحث عن قسم في لوحة الإدارة" className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-50" />
+              </div>
+            </div>
+            <div className="space-y-4">
+              {filteredTabGroups.map((group) => <section key={group.id}>
+                <h3 className={`px-3 pb-1.5 text-[11px] font-black ${group.sensitive ? 'text-rose-700' : 'text-slate-400'}`}>{group.label}</h3>
+                <div className="space-y-1">
+                  {group.tabs.map((item) => {
+                    const active = tab === item.id;
+                    const count = tabCounts[item.id] ?? 0;
+                    const sensitive = item.id === 'danger-zone';
+                    return <button key={item.id} type="button" aria-current={active ? 'page' : undefined} onClick={() => selectTab(item.id)} className={`flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-start text-sm font-bold transition ${active ? 'bg-brand-700 text-white shadow-md shadow-brand-200' : sensitive ? 'text-rose-700 hover:bg-rose-50' : 'text-slate-600 hover:bg-slate-50 hover:text-brand-800'}`}>
+                      <item.icon className="size-4 shrink-0" />
+                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                      {count > 0 ? <span className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'}`}>{formatNumber(count)}</span> : null}
+                    </button>;
+                  })}
+                </div>
+              </section>)}
+              {!filteredTabGroups.length ? <p className="rounded-xl bg-slate-50 px-3 py-4 text-center text-xs font-semibold text-slate-500">لا توجد أقسام مطابقة للبحث.</p> : null}
+            </div>
+          </nav>
+        </aside>
 
-      <div className="mt-6">
+        <main id="admin-panel" className="min-w-0 space-y-5">
+          <header className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-200 bg-white px-4 py-3 shadow-sm sm:px-5">
+            <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-50 text-brand-700"><activeTab.icon className="size-5" /></span>
+            <div className="min-w-0 flex-1">
+              <p className="text-[11px] font-bold text-slate-500">القسم الحالي</p>
+              <h2 className="truncate text-base font-black text-slate-900 sm:text-lg">{activeTab.label}</h2>
+            </div>
+            {tabCounts[tab] ? <Badge tone="rose">{formatNumber(tabCounts[tab] ?? 0)} بانتظار المراجعة</Badge> : null}
+          </header>
+
         {tab === 'overview' ? (
           <div className="grid gap-6 lg:grid-cols-[1.1fr_1fr]">
             <section className="card p-5 sm:p-6">
@@ -366,7 +416,7 @@ export const AdminDashboardPage = () => {
                 <button
                   key={card.id}
                   type="button"
-                  onClick={() => setTab(card.id)}
+                  onClick={() => selectTab(card.id)}
                   className="card flex w-full items-start gap-4 p-5 text-start transition hover:-translate-y-0.5 hover:border-brand-200"
                 >
                   <span
@@ -416,6 +466,7 @@ export const AdminDashboardPage = () => {
           {tab === 'conversations' ? <AdminConversationsPanel /> : null}
           {tab === 'audit' ? <AdminAuditPanel /> : null}
         </Suspense>
+        </main>
       </div>
     </div>
   );
