@@ -171,6 +171,7 @@ export interface FreelancerDetail {
 export type ServiceStatus = 'active' | 'inactive';
 export interface ServiceMedia { url: string; type: 'image' | 'video' | 'link'; }
 export interface ServiceSource { title: string; url: string; }
+export interface ServiceReview { id: string; clientName: string; rating: number; comment: string | null; createdAt: string; }
 
 export interface MicroService {
   id: string;
@@ -185,6 +186,9 @@ export interface MicroService {
   sources: ServiceSource[];
   status: ServiceStatus;
   createdAt: string;
+  avgRating: number;
+  reviewCount: number;
+  reviews: ServiceReview[];
 }
 
 export interface MicroServicePayload {

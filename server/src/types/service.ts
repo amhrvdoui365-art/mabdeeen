@@ -2,6 +2,7 @@ export type ServiceStatus = 'active' | 'inactive';
 export type ServiceMediaType = 'image' | 'video' | 'link';
 export interface ServiceMedia { url: string; type: ServiceMediaType; }
 export interface ServiceSource { title: string; url: string; }
+export interface ServiceReview { id: string; clientName: string; rating: number; comment: string | null; createdAt: string; }
 
 export interface Service {
   id: string;
@@ -16,6 +17,9 @@ export interface Service {
   sources: ServiceSource[];
   status: ServiceStatus;
   createdAt: string;
+  avgRating: number;
+  reviewCount: number;
+  reviews: ServiceReview[];
 }
 
 export interface ServiceDraft {

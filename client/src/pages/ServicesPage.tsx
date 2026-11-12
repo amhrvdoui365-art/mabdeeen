@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpDown, BriefcaseBusiness, Search, SlidersHorizontal, Sparkles } from 'lucide-react';
+import { ArrowUpDown, BriefcaseBusiness, Search, SlidersHorizontal, Sparkles, Star } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/context/AuthContext';
 import { Avatar } from '@/components/ui/Avatar';
@@ -35,6 +35,19 @@ const ServiceCard = ({ service, allowRequest }: { service: MicroService; allowRe
         <span className="shrink-0 rounded-2xl bg-orange-50 px-3 py-2 text-sm font-black text-orange-800">{formatPoints(service.price)}</span>
       </div>
       <p className="mt-3 line-clamp-3 min-h-[4.5rem] whitespace-pre-wrap text-sm leading-6 text-slate-600">{service.description}</p>
+      <div className="mt-3 flex items-center gap-2 text-sm">
+        <span className="inline-flex items-center gap-1 font-black text-amber-700"><Star className="size-4 fill-amber-400 text-amber-500"/>{service.reviewCount ? service.avgRating.toFixed(1) : 'جديدة'}</span>
+        <span className="text-xs font-semibold text-slate-500">{service.reviewCount ? `${service.reviewCount} تقييم للخدمة` : 'لم تحصل على تقييم بعد'}</span>
+      </div>
+      {service.reviews.length ? <details className="mt-2 rounded-xl border border-amber-100 bg-amber-50/50 px-3 py-2">
+        <summary className="cursor-pointer text-xs font-extrabold text-amber-900">قراءة تقييمات الخدمة ({service.reviewCount})</summary>
+        <div className="mt-2 space-y-2">
+          {service.reviews.map((review) => <article key={review.id} className="rounded-lg bg-white p-2.5">
+            <div className="flex items-center justify-between gap-2 text-xs"><strong className="truncate text-slate-800">{review.clientName}</strong><span className="inline-flex shrink-0 items-center gap-1 font-bold text-amber-700"><Star className="size-3 fill-amber-400 text-amber-500"/>{review.rating}/5</span></div>
+            <p className="mt-1 whitespace-pre-wrap text-xs leading-5 text-slate-600">{review.comment || 'قيّم العميل هذه الخدمة دون إضافة تعليق.'}</p>
+          </article>)}
+        </div>
+      </details> : null}
       {service.sources.length ? <div className="mt-3 flex flex-wrap gap-2">{service.sources.slice(0, 3).map((source, index) => <a key={`${source.url}-${index}`} href={source.url} target="_blank" rel="noreferrer" className="max-w-full truncate rounded-full border border-cyan-100 bg-cyan-50 px-3 py-1.5 text-xs font-bold text-cyan-800 hover:bg-cyan-100">{source.title}</a>)}{service.sources.length > 3 ? <span className="rounded-full bg-slate-100 px-3 py-1.5 text-xs font-bold text-slate-600">+{service.sources.length - 3}</span> : null}</div> : null}
       <div className="mt-auto border-t border-slate-100 pt-4">
         <Link to={`/freelancers/${service.freelancerId}?serviceId=${encodeURIComponent(service.id)}`} className="flex min-w-0 items-center gap-3 rounded-2xl p-2 transition hover:bg-cyan-50">

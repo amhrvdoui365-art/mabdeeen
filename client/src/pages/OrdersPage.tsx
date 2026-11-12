@@ -37,7 +37,7 @@ export const OrdersPage = () => {
   const mutation = useMutation({ mutationFn: ({ action, id }: { action: string; id: string }) => ordersApi.action(id, action), onSuccess: async (_data, vars) => refresh(vars.id), onError: (error) => toast.error(getErrorMessage(error)) });
   const createMutation = useMutation({ mutationFn: () => ordersApi.create(requestedServiceId!, brief), onSuccess: async (order) => { await refresh(); navigate(`/orders?id=${order.id}`); }, onError: (error) => toast.error(getErrorMessage(error)) });
   const messageMutation = useMutation({ mutationFn: () => ordersApi.message(orderId!, message), onSuccess: async () => { setMessage(''); await refresh(orderId!); }, onError: (error) => toast.error(getErrorMessage(error)) });
-  const reviewMutation = useMutation({ mutationFn: () => ordersApi.review(orderId!, rating, comment), onSuccess: async () => { toast.success('شكرًا لك، تم إرسال تقييمك.'); await refresh(orderId!); }, onError: (error) => toast.error(getErrorMessage(error)) });
+  const reviewMutation = useMutation({ mutationFn: () => ordersApi.review(orderId!, rating, comment), onSuccess: async () => { toast.success('شكرًا لك، تم إرسال تقييمك.'); await refresh(orderId!); await queryClient.invalidateQueries({ queryKey: ['all-platform-services'] }); }, onError: (error) => toast.error(getErrorMessage(error)) });
   useEffect(() => { if (orderQuery.data) setMessage(''); }, [orderId]);
   const order = orderQuery.data as OrderDetails | undefined;
   const isSeller = Boolean(order && user?.id === order.freelancerId);

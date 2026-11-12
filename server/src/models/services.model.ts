@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { db } from '../config/db';
-import type { Service, ServiceDraft, ServiceMedia, ServiceSource, ServiceStatus } from '../types/service';
+import type { Service, ServiceDraft, ServiceMedia, ServiceReview, ServiceSource, ServiceStatus } from '../types/service';
 
 interface ServiceRow {
   id: string;
@@ -15,12 +15,18 @@ interface ServiceRow {
   sources_json: string;
   status: ServiceStatus;
   created_at: string;
+  avg_rating: number;
+  review_count: number;
 }
+
+interface ServiceReviewRow { service_id: string; id: string; client_name: string; rating: number; comment: string | null; created_at: string; }
 
 const SELECT_SERVICES = `
   SELECT s.id, s.freelancer_id, u.name AS freelancer_name,
          u.avatar_url AS freelancer_avatar_url, s.title, s.description,
-         s.price, s.category, s.media_json, s.sources_json, s.status, s.created_at
+         s.price, s.category, s.media_json, s.sources_json, s.status, s.created_at,
+         COALESCE((SELECT AVG(r.rating) FROM reviews r JOIN service_orders o ON o.id = r.order_id WHERE o.service_id = s.id), 0) AS avg_rating,
+         (SELECT COUNT(*) FROM reviews r JOIN service_orders o ON o.id = r.order_id WHERE o.service_id = s.id) AS review_count
   FROM services s
   JOIN users u ON u.id = s.freelancer_id
 `;
@@ -38,7 +44,26 @@ const mapService = (row: ServiceRow): Service => ({
   sources: JSON.parse(row.sources_json || '[]') as ServiceSource[],
   status: row.status,
   createdAt: row.created_at,
+  avgRating: Number(row.avg_rating ?? 0),
+  reviewCount: Number(row.review_count ?? 0),
+  reviews: [],
 });
+
+const mapServicesWithReviews = (rows: ServiceRow[]): Service[] => {
+  if (!rows.length) return [];
+  const ids = rows.map((row) => row.id);
+  const placeholders = ids.map(() => '?').join(', ');
+  const reviewRows = db.prepare(`SELECT o.service_id, r.id, r.client_name, r.rating, r.comment, r.created_at
+    FROM reviews r JOIN service_orders o ON o.id = r.order_id
+    WHERE o.service_id IN (${placeholders}) ORDER BY r.created_at DESC`).all(...ids) as unknown as ServiceReviewRow[];
+  const grouped = new Map<string, ServiceReview[]>();
+  for (const row of reviewRows) {
+    const reviews = grouped.get(row.service_id) ?? [];
+    if (reviews.length < 5) reviews.push({ id: row.id, clientName: row.client_name, rating: Number(row.rating), comment: row.comment, createdAt: row.created_at });
+    grouped.set(row.service_id, reviews);
+  }
+  return rows.map((row) => ({ ...mapService(row), reviews: grouped.get(row.id) ?? [] }));
+};
 
 export const listActiveServices = (freelancerId?: string): Service[] => {
   const rows = freelancerId
@@ -52,7 +77,7 @@ export const listActiveServices = (freelancerId?: string): Service[] => {
           (u.featured_until IS NULL OR u.featured_until > strftime('%Y-%m-%dT%H:%M:%fZ', 'now'))
           THEN 1 ELSE 0 END DESC, s.created_at DESC`).all();
 
-  return (rows as unknown as ServiceRow[]).map(mapService);
+  return mapServicesWithReviews(rows as unknown as ServiceRow[]);
 };
 
 export const listServicesByFreelancer = (freelancerId: string): Service[] => {
@@ -60,7 +85,7 @@ export const listServicesByFreelancer = (freelancerId: string): Service[] => {
     WHERE s.freelancer_id = ?
     ORDER BY s.created_at DESC`).all(freelancerId) as unknown as ServiceRow[];
 
-  return rows.map(mapService);
+  return mapServicesWithReviews(rows);
 };
 
 export const findServiceById = (id: string): Service | null => {
@@ -68,7 +93,7 @@ export const findServiceById = (id: string): Service | null => {
     | ServiceRow
     | undefined;
 
-  return row ? mapService(row) : null;
+  return row ? mapServicesWithReviews([row])[0] : null;
 };
 
 export const createService = (freelancerId: string, draft: ServiceDraft): Service => {
