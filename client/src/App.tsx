@@ -11,6 +11,7 @@ import { HomePage } from '@/pages/HomePage';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { AdminImpersonationBanner } from '@/components/layout/AdminImpersonationBanner';
 import { ContentMediaProtection } from '@/components/ContentMediaProtection';
+import { DemoModeSwitcher } from '@/components/auth/DemoModeSwitcher';
 
 const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const ArticlePage = lazy(() => import('@/pages/ArticlePage').then((module) => ({ default: module.ArticlePage })));
@@ -84,6 +85,7 @@ export const App = () => {
             <ToastProvider>
               <ScrollToTop />
               <AdminImpersonationBanner />
+              <DemoModeSwitcher />
               <PendingAccountRouteGuard>
                 <Suspense fallback={<RouteLoading />}>
                 <Routes>

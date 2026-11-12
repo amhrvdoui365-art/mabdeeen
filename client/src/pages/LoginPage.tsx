@@ -5,7 +5,6 @@ import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { GitHubAuthButton } from '@/components/auth/GitHubAuthButton';
-import { DemoModeSwitcher } from '@/components/auth/DemoModeSwitcher';
 import { InlineLoader } from '@/components/ui/Spinner';
 import { useAuth } from '@/context/AuthContext';
 import { useDocumentTitle } from '@/hooks/useDocumentTitle';
@@ -181,7 +180,6 @@ export const LoginPage = () => {
           )}
         </button>
       </form>
-      <div className="mt-5"><DemoModeSwitcher /></div>
       <div className="my-5 flex items-center gap-3" aria-hidden="true">
         <span className="h-px flex-1 bg-slate-200" />
         <span className="text-xs font-semibold text-slate-400">أو</span>
