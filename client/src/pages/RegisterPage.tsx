@@ -92,7 +92,7 @@ export const RegisterPage = () => {
   }, [navigate, returnPath]);
 
   if (!isLoading && user) {
-    return <Navigate to={getDashboardPath(user.role)} replace />;
+    return <Navigate to={!user.profileComplete ? '/complete-profile' : getDashboardPath(user.role)} replace />;
   }
 
   const submit = handleSubmit(async (values) => {

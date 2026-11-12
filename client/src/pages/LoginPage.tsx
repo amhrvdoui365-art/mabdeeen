@@ -78,7 +78,7 @@ export const LoginPage = () => {
   }, [completeOAuthLogin, navigate, returnPath]);
 
   if (!isLoading && user) {
-    return <Navigate to={returnPath || getDashboardPath(user.role)} replace />;
+    return <Navigate to={!user.profileComplete ? '/complete-profile' : returnPath || getDashboardPath(user.role)} replace />;
   }
 
   const submit = handleSubmit(async (values) => {
