@@ -39,27 +39,18 @@ const frameSandbox = (preview: Extract<ResolvedLink, { kind: 'frame' }>): string
 const originalLink = (preview: ResolvedLink): string =>
   preview.kind === 'frame' ? preview.originalUrl : preview.url;
 
-const displayAddress = (link: string): string => {
-  try {
-    const url = new URL(link);
-    return `${url.hostname.replace(/^www\./, '')}${url.pathname === '/' ? '' : url.pathname}`;
-  } catch {
-    return link;
-  }
-};
-
 const StatusDot = ({ state }: { state: 'loading' | 'ready' | 'slow' | 'blocked' }) => (
   <span aria-hidden className={`size-1.5 shrink-0 rounded-full ${state === 'ready' ? 'bg-emerald-500' : state === 'blocked' ? 'bg-rose-500' : state === 'slow' ? 'bg-amber-500' : 'animate-pulse bg-amber-400'}`} />
 );
 
-const BlockedCard = ({ link, title, onRetry, compact = false }: { link: string; title: string; onRetry: () => void; compact?: boolean }) => (
+const BlockedCard = ({ title, onRetry, compact = false }: { title: string; onRetry: () => void; compact?: boolean }) => (
   <div className={`relative flex size-full flex-col items-center justify-center overflow-hidden bg-linear-to-br from-slate-50 via-white to-indigo-50/70 px-4 text-center ${compact ? 'py-3' : 'py-5'}`}>
     <span aria-hidden className="pointer-events-none absolute -end-6 -top-6 size-24 rounded-full bg-indigo-200/30 blur-2xl" />
     <span className="grid size-10 place-items-center rounded-2xl bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100"><ShieldAlert className="size-5" /></span>
     <p className="mt-2 text-xs font-extrabold text-slate-800">تعذّر عرض الموقع داخل المنصة</p>
     <p className="mt-1 max-w-md text-[10px] leading-4 text-slate-500">الموقع يمنع التضمين عبر إعدادات الحماية (X-Frame-Options أو CSP) أو يحتاج تسجيل دخول، لذلك لا يسمح بعرض محتواه داخل إطار. المحتوى نفسه سليم.</p>
     <button type="button" onClick={onRetry} className="mt-3 inline-flex min-h-8 items-center gap-1.5 rounded-lg bg-slate-900 px-3 text-[10px] font-extrabold text-white transition hover:bg-slate-800"><RefreshCw className="size-3.5" />إعادة المحاولة</button>
-    <p className="mt-2 max-w-full truncate text-[9px] text-slate-400" title={`${title} — ${displayAddress(link)}`}>{displayAddress(link)}</p>
+    <p className="mt-2 max-w-full truncate text-[9px] text-slate-400">{title}</p>
   </div>
 );
 
@@ -135,7 +126,6 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
     </div>;
   }
 
-  const link = originalLink(preview);
   const meta = preview.kind === 'frame' ? PROVIDER_META[preview.provider] : { label: PROVIDER_META.media.label, ...mediaMeta(preview) };
   const ProviderIcon = meta.icon;
   const note = viewerRole === 'Freelancer'
@@ -145,7 +135,7 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
   const block = locked ? (event: SyntheticEvent) => event.preventDefault() : undefined;
 
   const media = preview.kind === 'media' ? <div className="size-full">
-    {mediaFailed ? <BlockedCard link={link} title={title} onRetry={retry} compact /> : preview.mediaType === 'image'
+    {mediaFailed ? <BlockedCard title={title} onRetry={retry} compact /> : preview.mediaType === 'image'
       ? <img src={preview.url} alt={title} draggable={false} onError={() => setMediaFailed(true)} onContextMenu={block} className="size-full bg-slate-950 object-contain" />
       : preview.mediaType === 'audio'
         ? <div className="grid size-full place-items-center bg-slate-900/95 p-4"><audio src={preview.url} controls controlsList="nodownload" onError={() => setMediaFailed(true)} onContextMenu={block} className="w-full" /></div>
@@ -169,13 +159,13 @@ export const LinkPreview = ({ sourceUrl, title, locked = false, viewerRole, clas
     {state !== 'ready' ? <span className="pointer-events-none absolute bottom-2 start-2 inline-flex items-center gap-1.5 rounded-full bg-white/90 px-2.5 py-1 text-[10px] font-bold text-slate-500 shadow-sm ring-1 ring-slate-200"><Loader2 className="size-3 animate-spin text-indigo-500" />{state === 'slow' ? 'التحميل بطيء… لو الصفحة مش ظاهرة اضغط «المعاينة لا تعمل؟»' : 'جارٍ تحميل المعاينة…'}</span> : null}
   </div> : null;
 
-  const body = media ?? frame ?? <BlockedCard link={link} title={title} onRetry={() => { setForceFallback(false); retry(); }} compact />;
+  const body = media ?? frame ?? <BlockedCard title={title} onRetry={() => { setForceFallback(false); retry(); }} compact />;
 
   const shell = (fullscreen: boolean) => <div className={`flex min-h-0 w-full flex-col overflow-hidden ${fullscreen ? 'size-full rounded-2xl border border-white/15 bg-slate-900/80 shadow-2xl backdrop-blur-2xl' : `rounded-2xl border border-white/80 bg-white/70 shadow-[0_12px_35px_-18px_rgba(49,46,129,0.45)] ring-1 ring-slate-900/5 backdrop-blur-xl ${className}`}`}>
     <div className={`flex shrink-0 items-center gap-2 border-b px-3 py-2 ${fullscreen ? 'border-white/10 bg-white/5' : 'border-white/70 bg-white/55'}`}>
       <span className={`grid size-7 shrink-0 place-items-center rounded-lg ring-1 ${meta.tone}`}><ProviderIcon className="size-4" /></span>
       <div className="min-w-0 flex-1">
-        <p className={`flex items-center gap-1.5 truncate text-[10px] font-extrabold ${fullscreen ? 'text-white' : 'text-slate-800'}`}><StatusDot state={blocked ? 'blocked' : state} />{meta.label}<span className={`truncate font-semibold ${fullscreen ? 'text-white/50' : 'text-slate-400'}`} dir="ltr">{displayAddress(link)}</span></p>
+        <p className={`flex items-center gap-1.5 truncate text-[10px] font-extrabold ${fullscreen ? 'text-white' : 'text-slate-800'}`}><StatusDot state={blocked ? 'blocked' : state} />{meta.label}</p>
       </div>
       <button ref={fullscreen ? undefined : expandButtonRef} type="button" onClick={() => setExpanded(true)} disabled={fullscreen} aria-label="فتح معاينة الرابط بالحجم الكامل" title="تكبير المعاينة" className={`grid size-8 shrink-0 place-items-center rounded-lg transition disabled:hidden ${fullscreen ? 'text-white/70' : 'text-slate-500 hover:bg-white hover:text-indigo-700'}`}><Maximize2 className="size-4" /></button>
       {fullscreen ? <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="grid size-9 shrink-0 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25"><X className="size-5" /></button> : null}
