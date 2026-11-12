@@ -148,6 +148,7 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
   }, [expanded]);
 
   const total = doc?.numPages ?? 0;
+  const fileSize = blob.size >= 1024 * 1024 ? `${(blob.size / (1024 * 1024)).toFixed(1)} MB` : `${Math.max(1, Math.round(blob.size / 1024))} KB`;
 
   if (failed) return <div className={`grid place-items-center bg-slate-50 text-xs text-rose-600 ${className ?? ''}`}>تعذرت معاينة ملف PDF.</div>;
 
@@ -161,23 +162,23 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
         {total > 1 && !expanded ? <div className="shrink-0 bg-slate-900/60 py-1"><PageControls pageNumber={pageNumber} total={total} onChange={setPageNumber} /></div> : null}
       </div>
       {expanded && doc ? createPortal(
-        <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`معاينة ${title}`} dir="rtl" onMouseDown={(event) => { if (event.target === event.currentTarget) setExpanded(false); }} onContextMenu={(event) => event.preventDefault()} className="fixed inset-0 z-[230] flex flex-col bg-slate-950/95 p-3 sm:p-5">
-          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-white shadow-lg backdrop-blur sm:px-4">
+        <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`معاينة ${title}`} dir="rtl" onMouseDown={(event) => { if (event.target === event.currentTarget) setExpanded(false); }} onContextMenu={(event) => event.preventDefault()} className="fixed inset-0 z-[230] flex flex-col bg-[#f8f9fa] p-3 text-slate-800 sm:p-5">
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-slate-200 bg-white px-3 py-2.5 text-slate-800 shadow-sm sm:px-4">
             <div className="flex min-w-0 flex-1 items-center gap-3">
-              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-500/15 text-rose-300"><span className="text-[10px] font-black">PDF</span></span>
-              <div className="min-w-0"><p className="truncate text-xs font-extrabold sm:text-sm">{title}</p><p className="mt-0.5 text-[10px] text-white/55">صفحة {pageNumber} من {total}</p></div>
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-50 text-rose-600"><span className="text-[10px] font-black">PDF</span></span>
+              <div className="min-w-0"><p className="truncate text-xs font-extrabold sm:text-sm">{title}</p><p className="mt-0.5 text-[10px] text-slate-500">PDF ? {fileSize} ? صفحة {pageNumber} من {total}</p></div>
             </div>
-            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/20 p-1" dir="ltr" aria-label="أدوات تكبير المعاينة">
-              <button type="button" onClick={() => setZoom((value) => Math.max(0.75, Math.round((value - 0.25) * 100) / 100))} disabled={zoom <= 0.75} aria-label="تصغير الصفحة" title="تصغير" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><Minus className="size-4" /></button>
+            <div className="flex items-center gap-1 rounded-xl border border-slate-200 bg-slate-50 p-1" dir="ltr" aria-label="أدوات تكبير المعاينة">
+              <button type="button" onClick={() => setZoom((value) => Math.max(0.75, Math.round((value - 0.25) * 100) / 100))} disabled={zoom <= 0.75} aria-label="تصغير الصفحة" title="تصغير" className="grid size-9 place-items-center rounded-lg hover:bg-white disabled:opacity-35"><Minus className="size-4" /></button>
               <span className="min-w-12 text-center text-[11px] font-bold tabular-nums">{Math.round(zoom * 100)}%</span>
-              <button type="button" onClick={() => setZoom((value) => Math.min(3, Math.round((value + 0.25) * 100) / 100))} disabled={zoom >= 3} aria-label="تكبير الصفحة" title="تكبير" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><Plus className="size-4" /></button>
-              <span className="mx-1 h-5 w-px bg-white/15" />
-              <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="ملاءمة الصفحة للشاشة" title="ملاءمة الصفحة" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><RotateCcw className="size-4" /></button>
+              <button type="button" onClick={() => setZoom((value) => Math.min(3, Math.round((value + 0.25) * 100) / 100))} disabled={zoom >= 3} aria-label="تكبير الصفحة" title="تكبير" className="grid size-9 place-items-center rounded-lg hover:bg-white disabled:opacity-35"><Plus className="size-4" /></button>
+              <span className="mx-1 h-5 w-px bg-slate-300" />
+              <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="ملاءمة الصفحة للشاشة" title="ملاءمة الصفحة" className="grid size-9 place-items-center rounded-lg hover:bg-white disabled:opacity-35"><RotateCcw className="size-4" /></button>
             </div>
-            <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20"><X className="size-5" /></button>
+            <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="flex size-10 shrink-0 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"><X className="size-5" /></button>
           </div>
-          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-slate-800/70 shadow-inner"><PageCanvas doc={doc} pageNumber={pageNumber} zoom={zoom} /></div>
-          {total > 1 ? <div className="mt-3 flex justify-center"><div className="rounded-xl border border-white/10 bg-white/5 px-3 py-1"><PageControls pageNumber={pageNumber} total={total} onChange={setPageNumber} /></div></div> : null}
+          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-slate-200 bg-[#e8eaed] shadow-inner"><PageCanvas doc={doc} pageNumber={pageNumber} zoom={zoom} /></div>
+          {total > 1 ? <div className="mt-3 flex justify-center"><div className="rounded-xl border border-slate-200 bg-slate-900 px-3 py-1 shadow-sm"><PageControls pageNumber={pageNumber} total={total} onChange={setPageNumber} /></div></div> : null}
         </div>,
         document.body,
       ) : null}
