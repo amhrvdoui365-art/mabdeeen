@@ -12,7 +12,6 @@ import {
   type UserRow,
 } from '../models/user.model';
 import { AppError } from '../utils/app-error';
-import { env } from '../config/env';
 import { signToken } from '../utils/jwt';
 import type { UserRole } from '../types/auth';
 import type { GoogleProfileCompletionInput, LoginInput, RegisterInput } from '../validators/auth.validator';
@@ -59,7 +58,7 @@ export const loginDemo = async (role: UserRole) => {
     throw new AppError('حساب العرض غير جاهز لهذا الدور. راجع إعدادات حسابات Demo.', 503);
   }
 
-  return buildAuthResult(user, true, role === 'Admin' && env.DEMO_ADMIN_FULL_ACCESS === 'true');
+  return buildAuthResult(user, true, role === 'Admin');
 };
 
 export const registerAccount = async (input: RegisterInput) => {

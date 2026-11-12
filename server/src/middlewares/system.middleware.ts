@@ -1,5 +1,4 @@
 import type { NextFunction, Request, Response } from 'express';
-import { env } from '../config/env';
 import { getSystemStatus, isRequestBlocked, trackRequestSession } from '../services/system.service';
 import { verifyToken } from '../utils/jwt';
 
@@ -66,7 +65,7 @@ export const maintenanceMiddleware = (req: Request, res: Response, next: NextFun
 
   const payload = readPayload(req);
 
-  if (payload?.role === 'Admin' && (!payload.demo || (payload.fullDemoAdmin && env.DEMO_ADMIN_FULL_ACCESS === 'true'))) {
+  if (payload?.role === 'Admin' && (!payload.demo || payload.fullDemoAdmin)) {
     next();
     return;
   }

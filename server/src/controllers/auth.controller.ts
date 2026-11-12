@@ -46,7 +46,7 @@ export const login = async (
 
 export const demoOptions = async (_req: Request, res: Response): Promise<void> => {
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ success: true, data: { ...(await getDemoLoginOptions()), adminFullAccess: env.DEMO_ADMIN_FULL_ACCESS === 'true' } });
+  res.status(200).json({ success: true, data: { ...(await getDemoLoginOptions()), adminFullAccess: true } });
 };
 
 export const demoLogin = async (

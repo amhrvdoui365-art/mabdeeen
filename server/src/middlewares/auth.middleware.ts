@@ -1,7 +1,6 @@
 import type { NextFunction, Request, Response } from 'express';
 import { findUserById } from '../models/user.model';
 import type { UserRole } from '../types/auth';
-import { env } from '../config/env';
 import { AppError } from '../utils/app-error';
 import { asyncHandler } from '../utils/async-handler';
 import { verifyToken } from '../utils/jwt';
@@ -36,7 +35,7 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
 
   const requestPath = req.originalUrl.split('?')[0];
   const isDemoSession = payload.demo === true;
-  const isFullDemoAdmin = payload.fullDemoAdmin === true && env.DEMO_ADMIN_FULL_ACCESS === 'true' && user.role === 'Admin';
+  const isFullDemoAdmin = payload.fullDemoAdmin === true && user.role === 'Admin';
   if (isDemoSession && user.role === 'Admin' && !isFullDemoAdmin) {
     const isCommunityOrArticleRead = req.method === 'GET' && (
       requestPath === '/api/auth/me' ||
@@ -50,9 +49,6 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
     }
   }
 
-  if (isDemoSession && requestPath.endsWith('/auth/change-password')) {
-    throw new AppError('لا يمكن تغيير كلمة مرور حساب العرض التجريبي.', 403);
-  }
   const isGoogleProfileCompletion = requestPath.endsWith('/auth/google/complete-profile') && !user.profile_complete;
   const allowedForPendingAccount = requestPath.endsWith('/auth/me') ||
     requestPath.endsWith('/parent/verification/start') ||
@@ -115,7 +111,7 @@ export const optionalAuthenticate = asyncHandler(async (req, _res, next) => {
         email: user.email,
         role: user.role,
         ...(payload.demo ? { isDemo: true } : {}),
-        ...(payload.fullDemoAdmin === true && env.DEMO_ADMIN_FULL_ACCESS === 'true' && user.role === 'Admin' ? { isFullDemoAdmin: true } : {}),
+        ...(payload.fullDemoAdmin === true && user.role === 'Admin' ? { isFullDemoAdmin: true } : {}),
       };
     }
   } catch {
