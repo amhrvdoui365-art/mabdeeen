@@ -12,6 +12,7 @@ import {
   type UserRow,
 } from '../models/user.model';
 import { AppError } from '../utils/app-error';
+import { env } from '../config/env';
 import { signToken } from '../utils/jwt';
 import type { UserRole } from '../types/auth';
 import type { GoogleProfileCompletionInput, LoginInput, RegisterInput } from '../validators/auth.validator';
@@ -29,14 +30,15 @@ const isUniqueViolation = (error: unknown): boolean => {
   );
 };
 
-const buildAuthResult = (user: UserRow, isDemo = false) => {
+const buildAuthResult = (user: UserRow, isDemo = false, isFullDemoAdmin = false) => {
   return {
-    user: { ...toPublicUser(user), ...(isDemo ? { isDemo: true } : {}) },
+    user: { ...toPublicUser(user), ...(isDemo ? { isDemo: true } : {}), ...(isFullDemoAdmin ? { isFullDemoAdmin: true } : {}) },
     token: signToken({
       sub: user.id,
       email: user.email,
       role: user.role,
       ...(isDemo ? { demo: true } : {}),
+      ...(isFullDemoAdmin ? { fullDemoAdmin: true } : {}),
     }, isDemo ? '2h' : undefined),
   };
 };
@@ -57,7 +59,7 @@ export const loginDemo = async (role: UserRole) => {
     throw new AppError('حساب العرض غير جاهز لهذا الدور. راجع إعدادات حسابات Demo.', 503);
   }
 
-  return buildAuthResult(user, true);
+  return buildAuthResult(user, true, role === 'Admin' && env.DEMO_ADMIN_FULL_ACCESS === 'true');
 };
 
 export const registerAccount = async (input: RegisterInput) => {

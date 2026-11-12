@@ -1,6 +1,7 @@
 import type { NextFunction, Request, Response } from 'express';
 import { findUserById } from '../models/user.model';
 import type { UserRole } from '../types/auth';
+import { env } from '../config/env';
 import { AppError } from '../utils/app-error';
 import { asyncHandler } from '../utils/async-handler';
 import { verifyToken } from '../utils/jwt';
@@ -35,7 +36,8 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
 
   const requestPath = req.originalUrl.split('?')[0];
   const isDemoSession = payload.demo === true;
-  if (isDemoSession && user.role === 'Admin') {
+  const isFullDemoAdmin = payload.fullDemoAdmin === true && env.DEMO_ADMIN_FULL_ACCESS === 'true' && user.role === 'Admin';
+  if (isDemoSession && user.role === 'Admin' && !isFullDemoAdmin) {
     const isCommunityOrArticleRead = req.method === 'GET' && (
       requestPath === '/api/auth/me' ||
       requestPath === '/api/community/posts' ||
@@ -93,6 +95,7 @@ export const authenticate = asyncHandler(async (req, _res, next) => {
     role: user.role,
     ...(payload.impersonatedBy ? { impersonatedBy: payload.impersonatedBy } : {}),
     ...(isDemoSession ? { isDemo: true } : {}),
+    ...(isFullDemoAdmin ? { isFullDemoAdmin: true } : {}),
   };
 
   next();
@@ -106,7 +109,14 @@ export const optionalAuthenticate = asyncHandler(async (req, _res, next) => {
     const payload = verifyToken(authorization.slice(7).trim());
     const user = await findUserById(payload.sub);
     if (user?.is_active && (!user.token_invalid_before || payload.iat === undefined || payload.iat * 1000 >= Date.parse(user.token_invalid_before))) {
-      req.user = { id: user.id, name: user.name, email: user.email, role: user.role, ...(payload.demo ? { isDemo: true } : {}) };
+      req.user = {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        ...(payload.demo ? { isDemo: true } : {}),
+        ...(payload.fullDemoAdmin === true && env.DEMO_ADMIN_FULL_ACCESS === 'true' && user.role === 'Admin' ? { isFullDemoAdmin: true } : {}),
+      };
     }
   } catch {
     // Public pages remain available if a saved optional session has expired.

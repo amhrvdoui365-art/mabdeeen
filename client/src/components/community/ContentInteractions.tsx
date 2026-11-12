@@ -34,7 +34,7 @@ const elapsed = (date: string): string => {
 
 export const ContentInteractions = ({ contentId, contentType, initial, api }: ContentInteractionsProps) => {
   const { user } = useAuth();
-  const isReadOnlyDemoAdmin = user?.isDemo === true && user.role === 'Admin';
+  const isReadOnlyDemoAdmin = user?.isDemo === true && user.role === 'Admin' && !user.isFullDemoAdmin;
   const toast = useToast();
   const queryClient = useQueryClient();
   const inputRef = useRef<HTMLInputElement>(null);

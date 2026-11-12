@@ -30,8 +30,8 @@ export const CommunityPostPage = () => {
   });
   if (postQuery.isPending) return <main dir="rtl" className="container-page min-h-[60vh] py-20 text-center text-slate-500">نحمّل المشاركة...</main>;
   if (postQuery.isError || !post) return <main dir="rtl" className="container-page min-h-[60vh] py-20 text-center"><p className="text-xl font-black">المشاركة غير متاحة</p><Link to="/community" className="mt-5 inline-flex items-center gap-2 font-bold text-cyan-700"><ArrowRight className="size-4"/>العودة للمجتمع</Link></main>;
-  const canEdit = !user?.isDemo && user?.id === post.authorId;
-  const canDelete = !user?.isDemo && (canEdit || user?.role === 'Admin');
+  const canEdit = (!user?.isDemo || user.isFullDemoAdmin) && user?.id === post.authorId;
+  const canDelete = (!user?.isDemo || user.isFullDemoAdmin) && (canEdit || user?.role === 'Admin');
   return <main dir="rtl" className="min-h-screen bg-slate-50 pb-20"><div className="container-page max-w-4xl py-8"><Link to="/community" className="inline-flex items-center gap-2 text-sm font-extrabold text-cyan-700"><ArrowRight className="size-4"/> مجتمع مبدعين</Link>
     <article className="mt-6 overflow-hidden rounded-3xl border border-slate-100 bg-white shadow-xl shadow-slate-200/50">
       {post.coverImage ? <MediaViewer url={post.coverImage} title={post.title} aspect="cover" className="rounded-none border-0 shadow-none" onImageClick={() => setPreviewImage(post.coverImage!)} /> : null}

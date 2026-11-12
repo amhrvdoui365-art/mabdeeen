@@ -26,7 +26,7 @@ export const ProtectedRoute = ({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/complete-profile" replace />;
   }
 
-  if (user.isDemo && user.role === 'Admin' && location.pathname === '/admin') {
+  if (user.isDemo && user.role === 'Admin' && !user.isFullDemoAdmin && location.pathname === '/admin') {
     return <Navigate to="/community" replace />;
   }
 

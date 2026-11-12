@@ -14,7 +14,7 @@ export const mine = async (req: Request, res: Response): Promise<void> => {
   res.status(200).json({ success: true, data: { items: getMyCommunityPosts(req.user!.id) } });
 };
 export const show = async (req: Request, res: Response): Promise<void> => {
-  const post = req.user?.role === 'Admin' && !req.user.isDemo ? getCommunityPostForAdmin(String(req.params.id)) : getCommunityPost(String(req.params.id), req.user?.id);
+  const post = req.user?.role === 'Admin' && (!req.user.isDemo || req.user.isFullDemoAdmin) ? getCommunityPostForAdmin(String(req.params.id)) : getCommunityPost(String(req.params.id), req.user?.id);
   res.status(200).json({ success: true, data: { post } });
 };
 export const manage = async (_req: Request, res: Response): Promise<void> => {

@@ -10,6 +10,7 @@ const envSchema = z.object({
   UPLOAD_DIR: z.string().min(1).default('./uploads'),
   JWT_SECRET: z.string().min(32, 'JWT_SECRET must be at least 32 characters'),
   JWT_EXPIRES_IN: z.string().min(1).default('7d'),
+  DEMO_ADMIN_FULL_ACCESS: z.enum(['true', 'false']).default('false'),
   CORS_ORIGIN: z.string().min(1).default('http://localhost:5173'),
   GOOGLE_CLIENT_ID: z.string().trim().optional(),
   GOOGLE_CLIENT_SECRET: z.string().trim().optional(),

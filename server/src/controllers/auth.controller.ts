@@ -46,7 +46,7 @@ export const login = async (
 
 export const demoOptions = async (_req: Request, res: Response): Promise<void> => {
   res.setHeader('Cache-Control', 'no-store');
-  res.status(200).json({ success: true, data: await getDemoLoginOptions() });
+  res.status(200).json({ success: true, data: { ...(await getDemoLoginOptions()), adminFullAccess: env.DEMO_ADMIN_FULL_ACCESS === 'true' } });
 };
 
 export const demoLogin = async (
@@ -63,7 +63,7 @@ export const me = async (req: Request, res: Response): Promise<void> => {
 
   res.status(200).json({
     success: true,
-    data: { user: { ...user, ...(req.user?.isDemo ? { isDemo: true } : {}) } },
+    data: { user: { ...user, ...(req.user?.isDemo ? { isDemo: true } : {}), ...(req.user?.isFullDemoAdmin ? { isFullDemoAdmin: true } : {}) } },
   });
 };
 

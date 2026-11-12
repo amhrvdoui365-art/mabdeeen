@@ -23,9 +23,9 @@ export interface GoogleProfileCompletionPayload {
 }
 
 export const authApi = {
-  demoOptions: async (): Promise<{ enabled: boolean }> => {
+  demoOptions: async (): Promise<{ enabled: boolean; adminFullAccess: boolean }> => {
     const response = await api.get('/auth/demo/options');
-    return unwrap<{ enabled: boolean }>(response);
+    return unwrap<{ enabled: boolean; adminFullAccess: boolean }>(response);
   },
 
   demoLogin: async (role: Role): Promise<AuthResult> => {

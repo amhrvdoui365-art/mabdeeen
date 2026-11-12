@@ -58,11 +58,11 @@ export const Header = () => {
     navigate('/');
   };
 
-  const dashboardPath = user ? (user.isDemo && user.role === 'Admin' ? '/community' : getDashboardPath(user.role)) : '/login';
+  const dashboardPath = user ? (user.isDemo && user.role === 'Admin' && !user.isFullDemoAdmin ? '/community' : getDashboardPath(user.role)) : '/login';
   const verificationLocked = user?.role === 'Freelancer' && user.accountStatus !== 'ACTIVE';
   const dashboardLabel =
     user?.role === 'Admin'
-      ? user.isDemo ? 'معاينة المجتمع' : 'لوحة الإدارة'
+      ? user.isDemo && !user.isFullDemoAdmin ? 'معاينة المجتمع' : 'لوحة الإدارة'
       : user?.role === 'Buyer'
         ? 'لوحة المشتري'
         : user?.role === 'Parent'

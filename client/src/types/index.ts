@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: Role;
   isDemo?: boolean;
+  isFullDemoAdmin?: boolean;
   bio: string | null;
   title: string | null;
   location: string | null;

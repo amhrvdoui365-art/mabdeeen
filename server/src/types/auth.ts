@@ -6,6 +6,7 @@ export interface TokenPayload {
   role: UserRole;
   impersonatedBy?: string;
   demo?: boolean;
+  fullDemoAdmin?: boolean;
 }
 
 export interface AuthenticatedUser {
@@ -15,4 +16,5 @@ export interface AuthenticatedUser {
   role: UserRole;
   impersonatedBy?: string;
   isDemo?: boolean;
+  isFullDemoAdmin?: boolean;
 }

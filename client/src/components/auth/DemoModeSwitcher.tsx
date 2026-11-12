@@ -12,7 +12,7 @@ const demoRoles: { role: Role; label: string; icon: typeof UsersRound; destinati
   { role: 'Freelancer', label: 'حساب مستقل (Demo)', icon: BriefcaseBusiness, destination: '/dashboard' },
   { role: 'Buyer', label: 'حساب عميل (Demo)', icon: Search, destination: '/buyer' },
   { role: 'Parent', label: 'حساب ولي الأمر (Demo)', icon: HeartHandshake, destination: '/parent' },
-  { role: 'Admin', label: 'المجتمع والإدارة (Demo)', icon: UsersRound, destination: '/community' },
+  { role: 'Admin', label: 'لوحة الإدارة (Demo)', icon: UsersRound, destination: '/admin' },
 ];
 
 interface DemoModeSwitcherProps {
@@ -35,12 +35,12 @@ export const DemoModeSwitcher = ({ mode = 'floating' }: DemoModeSwitcherProps) =
   const isAuthPage = location.pathname === '/login' || location.pathname === '/register';
   if (!options.data?.enabled || (mode === 'floating' && isAuthPage && !user)) return null;
 
-  const enterDemo = async (role: Role, destination: string) => {
+  const enterDemo = async (role: Role) => {
     setPendingRole(role);
     setError('');
     try {
       const user = await loginDemo(role);
-      navigate(user.role === 'Admin' ? destination : getDashboardPath(user.role), { replace: true });
+      navigate(user.role === 'Admin' ? (user.isFullDemoAdmin ? '/admin' : '/community') : getDashboardPath(user.role), { replace: true });
     } catch (loginError) {
       setError(getErrorMessage(loginError, 'تعذر فتح حساب العرض. حاول مرة أخرى.'));
     } finally {
@@ -64,16 +64,16 @@ export const DemoModeSwitcher = ({ mode = 'floating' }: DemoModeSwitcherProps) =
         </div>
       </div>
       <div className="mt-3 grid grid-cols-2 gap-2">
-        {demoRoles.map(({ role, label, icon: Icon, destination }) => (
+        {demoRoles.map(({ role, label, icon: Icon }) => (
           <button
             key={role}
             type="button"
             disabled={pendingRole !== null}
-            onClick={() => void enterDemo(role, destination)}
+            onClick={() => void enterDemo(role)}
             className="inline-flex min-h-11 items-center justify-center gap-2 rounded-xl border border-violet-200 bg-white px-2 py-2 text-xs font-extrabold text-violet-950 transition hover:border-violet-400 hover:bg-violet-100 disabled:cursor-wait disabled:opacity-60"
           >
             {pendingRole === role ? <LoaderCircle className="size-4 animate-spin" /> : <Icon className="size-4" />}
-            {label}
+            {role === 'Admin' && !options.data.adminFullAccess ? 'المجتمع (Demo)' : label}
           </button>
         ))}
       </div>
