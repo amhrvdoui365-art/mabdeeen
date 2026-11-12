@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+/* Keep displayed media inside its frame without stretching or cropping it. */
+img:not(.rounded-full),
+video {
+  max-width: 100%;
+  object-fit: contain !important;
+  object-position: center;
+}
+
+iframe {
+  max-width: 100%;
+}
+
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
