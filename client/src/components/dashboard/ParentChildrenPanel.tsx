@@ -1,10 +1,11 @@
 import { useEffect, useState, type FormEvent } from 'react';
 import { createPortal } from 'react-dom';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { BadgeCheck, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronDown, ExternalLink, Eye, FileText, HeartHandshake, Image as ImageIcon, Link2, MapPin, MessageCircle, Pencil, Play, ShieldCheck, Star, UsersRound, X } from 'lucide-react';
+import { BadgeCheck, BriefcaseBusiness, CalendarDays, Camera, Check, ChevronDown, ClipboardList, ExternalLink, Eye, FileText, HeartHandshake, Image as ImageIcon, Link2, MapPin, MessageCircle, Pencil, Play, ShieldCheck, Star, UsersRound, X } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { MediaViewer } from '@/components/common/MediaViewer';
 import { ParentChatViewer } from '@/components/dashboard/ParentChatViewer';
+import { ParentChildDeliveriesPanel, ParentChildOrdersPanel, ParentChildReviewsPanel } from '@/components/dashboard/ParentChildProgressPanel';
 import { MediaLightbox } from '@/components/ui/MediaLightbox';
 import { ExternalMediaCard } from '@/components/ui/ExternalMediaCard';
 import { ExternalWebViewLink } from '@/components/ui/ExternalWebViewLink';
@@ -14,12 +15,15 @@ import { getErrorMessage } from '@/services/api';
 import { parentApi, type LinkedChild } from '@/services/parent.service';
 import type { ServiceMedia } from '@/types';
 
-type ChildTab = 'overview' | 'services' | 'portfolio' | 'community' | 'chats';
+type ChildTab = 'overview' | 'services' | 'portfolio' | 'community' | 'orders' | 'reviews' | 'deliveries' | 'chats';
 const tabs: Array<{ id: ChildTab; label: string; icon: typeof Eye; count?: (child: LinkedChild) => number }> = [
   { id: 'overview', label: 'نظرة عامة', icon: Eye },
   { id: 'services', label: 'خدمات الابن', icon: BriefcaseBusiness, count: (child) => child.services.length },
   { id: 'portfolio', label: 'معرض الأعمال', icon: ImageIcon, count: (child) => child.portfolio.length },
   { id: 'community', label: 'مشاركات المجتمع', icon: FileText, count: (child) => child.posts.length },
+  { id: 'orders', label: 'الطلبات والتقدم', icon: ClipboardList, count: (child) => child.orders.length },
+  { id: 'reviews', label: 'التقييمات', icon: Star, count: (child) => child.reviews.length },
+  { id: 'deliveries', label: 'ملفات التسليم', icon: BriefcaseBusiness, count: (child) => child.deliveries.length },
   { id: 'chats', label: 'محادثات الأمان', icon: MessageCircle },
 ];
 
@@ -131,10 +135,10 @@ const ChildWorkspace = ({ child }: { child: LinkedChild }) => {
         <div className="min-w-0 flex-1"><div className="flex flex-wrap items-center gap-2"><h2 className="text-2xl font-black text-slate-900 sm:text-3xl">{displayName}</h2>{child.isVerified ? <span className="inline-flex items-center gap-1 rounded-full bg-cyan-50 px-2.5 py-1 text-xs font-bold text-cyan-800"><BadgeCheck className="size-3.5"/>موثق</span> : null}</div>{displayName !== child.name ? <p className="mt-1 text-xs text-slate-400">اسم الحساب: {child.name}</p> : null}<p className="mt-1 text-base font-bold text-cyan-800">{child.title || 'مبدع مستقل'}</p><p className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-slate-500"><span className="inline-flex items-center gap-1"><MapPin className="size-4"/>{child.location || 'الموقع غير محدد'}</span><span>انضم للمتابعة {new Date(child.linkedAt).toLocaleDateString('ar-EG')}</span></p><span className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-extrabold text-emerald-800"><ShieldCheck className="size-4"/>حساب مرتبط بموافقة ولي الأمر</span></div>
         <Link to={`/freelancers/${child.id}`} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl bg-cyan-600 px-4 py-2.5 text-sm font-extrabold text-white shadow-sm hover:bg-cyan-700"><Eye className="size-4"/>عرض الملف العام</Link>
       </div>
-      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3"><Stat icon={BriefcaseBusiness} label="الخدمات المنشورة" value={child.serviceCount} color="bg-cyan-50 text-cyan-900"/><Stat icon={Star} label="التقييمات" value={child.reviewCount} color="bg-orange-50 text-orange-900"/><Stat icon={FileText} label="مشاركات المجتمع" value={child.postCount} color="bg-lime-50 text-lime-900"/></div>
+      <div className="mt-6 grid grid-cols-1 gap-3 sm:grid-cols-3 xl:grid-cols-6"><Stat icon={BriefcaseBusiness} label="الخدمات المنشورة" value={child.serviceCount} color="bg-cyan-50 text-cyan-900"/><Stat icon={Star} label="التقييمات" value={child.stats.reviewCount} color="bg-orange-50 text-orange-900"/><Stat icon={Star} label="متوسط التقييم" value={Number(child.stats.avgRating)} color="bg-amber-50 text-amber-900"/><Stat icon={Eye} label="مشاهدات الملف" value={child.stats.viewCount} color="bg-violet-50 text-violet-900"/><Stat icon={ClipboardList} label="الطلبات المكتملة" value={child.orders.filter((order) => order.status === 'completed').length} color="bg-emerald-50 text-emerald-900"/><Stat icon={FileText} label="مشاركات المجتمع" value={child.postCount} color="bg-lime-50 text-lime-900"/></div>
     </section>
 
-    <nav aria-label="محتوى حساب الابن" className="mt-5 grid grid-cols-2 gap-2 rounded-3xl bg-white p-2 shadow-lg shadow-slate-200/40 sm:grid-cols-3 lg:grid-cols-5">
+    <nav aria-label="محتوى حساب الابن" className="mt-5 grid grid-cols-2 gap-2 rounded-3xl bg-white p-2 shadow-lg shadow-slate-200/40 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-8">
       {tabs.map(({ id, label, icon: Icon, count }) => <button key={id} type="button" onClick={() => setActiveTab(id)} aria-pressed={activeTab === id} className={`flex min-h-12 min-w-0 items-center justify-center gap-2 rounded-2xl px-2 py-3 text-xs font-extrabold transition sm:text-sm ${activeTab === id ? 'bg-cyan-600 text-white shadow-md shadow-cyan-200' : 'text-slate-600 hover:bg-cyan-50 hover:text-cyan-800'}`}><Icon className="size-4 shrink-0"/><span className="truncate">{label}</span>{count ? <span className={`rounded-full px-2 py-0.5 text-[10px] ${activeTab === id ? 'bg-white/20 text-white' : 'bg-slate-100 text-slate-500'}`}>{count(child)}</span> : null}</button>)}
     </nav>
 
@@ -144,6 +148,9 @@ const ChildWorkspace = ({ child }: { child: LinkedChild }) => {
       {activeTab === 'services' ? <ChildServices child={child}/> : null}
       {activeTab === 'portfolio' ? <ChildPortfolio child={child}/> : null}
       {activeTab === 'community' ? <ChildCommunity child={child}/> : null}
+      {activeTab === 'orders' ? <ParentChildOrdersPanel child={child}/> : null}
+      {activeTab === 'reviews' ? <ParentChildReviewsPanel child={child}/> : null}
+      {activeTab === 'deliveries' ? <ParentChildDeliveriesPanel child={child}/> : null}
       {activeTab === 'chats' ? <ParentChatViewer childId={child.id} childName={displayName}/> : null}
     </div>
   </div>;

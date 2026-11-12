@@ -1,5 +1,5 @@
 import type { Request, Response } from 'express';
-import { adminParentVerificationQueue, getPublicParentVerification, linkedChildren, pendingLinkRequests, requestParentLink, respondToLinkRequest, reviewParentVerificationRequest, startParentVerification, submitParentVerificationForm, parentVerificationPhoto, childParentChatSettings, childParentAccessHistory, parentChildConversations, parentChildMessages, parentChildMessageAttachment, approveLegacyParentChatAccess, updateParentChildDisplay } from '../services/parent.service';
+import { adminParentVerificationQueue, getPublicParentVerification, linkedChildren, pendingLinkRequests, requestParentLink, respondToLinkRequest, reviewParentVerificationRequest, startParentVerification, submitParentVerificationForm, parentVerificationPhoto, childParentChatSettings, childParentAccessHistory, parentChildConversations, parentChildMessages, parentChildMessageAttachment, parentChildDeliveryFile, approveLegacyParentChatAccess, updateParentChildDisplay } from '../services/parent.service';
 import type { ParentLinkRequestInput } from '../validators/parent.validator';
 import { AppError } from '../utils/app-error';
 
@@ -20,6 +20,17 @@ export const getParentChildMessageAttachment = async (req: Request, res: Respons
   res.type(file.mimeType);
   res.setHeader('Content-Disposition', /^(image|video)\//i.test(file.mimeType) ? 'inline' : 'attachment');
   res.sendFile(file.filePath);
+};
+export const getParentChildDeliveryFile = (req: Request, res: Response) => {
+  const download = req.query.download === '1';
+  const file = parentChildDeliveryFile(req.user!.id, String(req.params.childId), String(req.params.deliveryId), download);
+  const safeName = encodeURIComponent(file.name).replace(/[\\'()]/g, escape);
+  res.setHeader('Cache-Control', 'private, no-store, max-age=0');
+  res.setHeader('X-Content-Type-Options', 'nosniff');
+  res.setHeader('Content-Security-Policy', "default-src 'none'; frame-ancestors 'self'; sandbox");
+  res.setHeader('Content-Disposition', `${download ? 'attachment' : 'inline'}; filename*=UTF-8''${safeName}`);
+  res.type(file.mimeType);
+  res.sendFile(file.filePath, (error) => { if (error && !res.headersSent) res.status(404).end(); });
 };
 export const startVerification = async (req: Request, res: Response) => res.status(201).json({ success: true, data: await startParentVerification(req.user!.id, req.body.email) });
 export const getVerification = async (req: Request, res: Response) => res.json({ success: true, data: getPublicParentVerification(String(req.params.token)) });

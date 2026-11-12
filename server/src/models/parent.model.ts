@@ -32,12 +32,36 @@ export const listLinkedChildren = (parentId: string) => {
     FROM parent_child_links l JOIN users u ON u.id = l.child_id
   WHERE l.parent_id = ? AND l.status = 'APPROVED' AND u.is_active = 1 ORDER BY l.responded_at DESC`).all(parentId) as unknown as Array<{ id: string; name: string; avatarUrl: string | null; parentDisplayName: string | null; parentAvatarDataUrl: string | null; title: string | null; location: string | null; bio: string | null; githubUrl: string | null; linkedinUrl: string | null; websiteUrl: string | null; hourlyRate: number | null; minBudget: number | null; isAvailable: number; isVerified: number; linkedAt: string; portfolioCount: number; serviceCount: number; postCount: number; reviewCount: number }>;
   return children.map((child) => ({ ...child,
+    stats: db.prepare(`SELECT view_count AS viewCount, review_count AS reviewCount, avg_rating AS avgRating
+      FROM freelancer_stats WHERE freelancer_id = ?`).get(child.id) ?? { viewCount: 0, reviewCount: 0, avgRating: 0 },
+    orders: db.prepare(`SELECT o.id, o.service_title AS serviceTitle, o.brief, o.price_snapshot AS price,
+        o.status, o.created_at AS createdAt, o.updated_at AS updatedAt, o.completed_at AS completedAt,
+        buyer.name AS customerName,
+        (SELECT COUNT(*) FROM deliveries d WHERE d.order_id = o.id) AS deliveryCount
+      FROM service_orders o JOIN users buyer ON buyer.id = o.buyer_id
+      WHERE o.freelancer_id = ? ORDER BY o.updated_at DESC`).all(child.id),
+    reviews: db.prepare(`SELECT id, client_name AS clientName, rating, comment, created_at AS createdAt
+      FROM reviews WHERE freelancer_id = ? ORDER BY created_at DESC LIMIT 100`).all(child.id),
+    deliveries: db.prepare(`SELECT d.id, d.order_id AS orderId, d.file_name AS fileName, d.file_type AS fileType,
+        d.file_size AS fileSize, d.status, d.is_locked AS isLocked, d.source_url AS sourceUrl,
+        d.source_kind AS sourceKind, d.created_at AS createdAt, d.updated_at AS updatedAt,
+        COALESCE(o.service_title, s.title, 'تسليم مشروع') AS serviceTitle
+      FROM deliveries d LEFT JOIN service_orders o ON o.id = d.order_id LEFT JOIN services s ON s.id = d.project_id
+      WHERE d.freelancer_id = ? ORDER BY d.created_at DESC`).all(child.id),
     skills: db.prepare(`SELECT s.id, s.name FROM user_skills us JOIN skills s ON s.id = us.skill_id WHERE us.user_id = ? ORDER BY s.name`).all(child.id),
     services: db.prepare("SELECT id, title, description, category, price, media_json AS mediaJson, sources_json AS sourcesJson, created_at AS createdAt FROM services WHERE freelancer_id = ? AND status = 'active' ORDER BY created_at DESC").all(child.id),
     posts: db.prepare("SELECT id, title, content, category, cover_image AS coverImage, created_at AS createdAt, views_count AS viewsCount, likes_count AS likesCount FROM community_posts WHERE author_id = ? AND status = 'PUBLISHED' ORDER BY created_at DESC").all(child.id),
     portfolio: db.prepare("SELECT id, title, description, image_url AS imageUrl, project_url AS projectUrl, created_at AS createdAt FROM portfolio_items WHERE user_id = ? ORDER BY created_at DESC").all(child.id),
   }));
 };
+
+export const findParentChildDelivery = (parentId: string, childId: string, deliveryId: string) =>
+  db.prepare(`SELECT d.id, d.storage_key AS storageKey, d.file_name AS name, d.file_type AS mimeType,
+      d.source_url AS sourceUrl, d.is_locked AS isLocked
+    FROM deliveries d JOIN parent_child_links l ON l.child_id = d.freelancer_id
+    WHERE d.id = ? AND d.freelancer_id = ? AND l.parent_id = ? AND l.status = 'APPROVED'
+    LIMIT 1`).get(deliveryId, childId, parentId) as
+    { id: string; storageKey: string; name: string; mimeType: string; sourceUrl: string | null; isLocked: number } | undefined;
 
 export const updateLinkedChildDisplay = (parentId: string, childId: string, displayName: string | null | undefined, avatarDataUrl?: string): boolean => {
   const updates: string[] = [];

@@ -1,7 +1,17 @@
 import { api, unwrap } from './api';
 
 export interface ChildLinkRequest { id: string; parentId: string; childId: string; status: 'PENDING'; createdAt: string; parentName: string; parentAvatar: string | null; }
-export interface LinkedChild { id: string; name: string; avatarUrl: string | null; parentDisplayName: string | null; parentAvatarDataUrl: string | null; title: string | null; location: string | null; bio: string | null; githubUrl: string | null; linkedinUrl: string | null; websiteUrl: string | null; hourlyRate: number | null; minBudget: number | null; isAvailable: number; isVerified: number; linkedAt: string; portfolioCount: number; serviceCount: number; postCount: number; reviewCount: number; skills: Array<{ id: string; name: string }>; services: Array<{ id: string; title: string; description: string; category: string; price: number; mediaJson: string; sourcesJson: string; createdAt: string }>; posts: Array<{ id: string; title: string; content: string; category: string; coverImage: string | null; createdAt: string; viewsCount: number; likesCount: number }>; portfolio: Array<{ id: string; title: string; description: string | null; imageUrl: string | null; projectUrl: string | null; createdAt: string }>; }
+export interface LinkedChild {
+  id: string; name: string; avatarUrl: string | null; parentDisplayName: string | null; parentAvatarDataUrl: string | null; title: string | null; location: string | null; bio: string | null; githubUrl: string | null; linkedinUrl: string | null; websiteUrl: string | null; hourlyRate: number | null; minBudget: number | null; isAvailable: number; isVerified: number; linkedAt: string; portfolioCount: number; serviceCount: number; postCount: number; reviewCount: number;
+  stats: { viewCount: number; reviewCount: number; avgRating: number };
+  orders: Array<{ id: string; serviceTitle: string; brief: string; price: number; status: string; createdAt: string; updatedAt: string; completedAt: string | null; customerName: string; deliveryCount: number }>;
+  reviews: Array<{ id: string; clientName: string; rating: number; comment: string | null; createdAt: string }>;
+  deliveries: Array<{ id: string; orderId: string | null; fileName: string; fileType: string; fileSize: number; status: string; isLocked: number; sourceUrl: string | null; sourceKind: string; createdAt: string; updatedAt: string; serviceTitle: string }>;
+  skills: Array<{ id: string; name: string }>;
+  services: Array<{ id: string; title: string; description: string; category: string; price: number; mediaJson: string; sourcesJson: string; createdAt: string }>;
+  posts: Array<{ id: string; title: string; content: string; category: string; coverImage: string | null; createdAt: string; viewsCount: number; likesCount: number }>;
+  portfolio: Array<{ id: string; title: string; description: string | null; imageUrl: string | null; projectUrl: string | null; createdAt: string }>;
+}
 export interface ParentChatConsent { linkId: string; parentId: string; parentName: string; parentAvatar: string | null; chatAccessEnabled: boolean; }
 export interface ChildConversation { peerId: string; peerName: string; peerAvatar: string | null; serviceId: string | null; serviceTitle: string | null; lastMessageAt: string; lastMessage: string; }
 export interface ChildMessage { id: string; senderId: string; senderName: string; receiverId: string; receiverName: string; content: string; createdAt: string; attachmentName: string | null; attachmentMime: string | null; }
@@ -25,6 +35,7 @@ export const parentApi = {
   childConversations: async (childId: string) => unwrap<{ items: ChildConversation[] }>(await api.get(`/parent/children/${childId}/conversations`)).items,
   childMessages: async (childId: string, peerId: string, serviceId?: string | null) => unwrap<{ items: ChildMessage[] }>(await api.get(`/parent/children/${childId}/conversations/${peerId}/messages`, { params: serviceId ? { serviceId } : undefined })).items,
   childMessageAttachment: async (childId: string, messageId: string) => (await api.get(`/parent/children/${childId}/messages/${messageId}/attachment`, { responseType: 'blob' })).data as Blob,
+  childDeliveryFile: async (childId: string, deliveryId: string, download = false) => (await api.get(`/parent/children/${childId}/deliveries/${deliveryId}/file`, { params: download ? { download: '1' } : undefined, responseType: 'blob' })).data as Blob,
   startVerification: async (email: string) => unwrap<{ sent: boolean }>(await api.post('/parent/verification/start', { email })),
   verificationInfo: async (token: string) => unwrap<{ childName: string; a: number; b: number }>(await api.get(`/parent/verify/${encodeURIComponent(token)}`)),
   submitVerification: async (token: string, answer: number, photo: Blob) => {

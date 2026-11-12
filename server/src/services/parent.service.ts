@@ -6,12 +6,12 @@ import { db } from '../config/db';
 import { env } from '../config/env';
 import { privateParentVerificationDir } from '../config/paths';
 import { createUserNotification } from '../models/notification.model';
-import { createParentLink, createParentVerification, findChildByEmail, findParentById, findParentVerificationByChild, findParentVerificationByToken, getChildLinkRequests, listLinkedChildren, listParentVerifications, markAccountVerificationPending, respondToParentLink, reviewParentVerification, submitParentVerification, type ParentLinkRow, linkedParentsForChild, parentHasChatConsent, recordParentAccess, getChildParentAccessLog, getChildConversations, getChildConversationMessages, findLinkedChildMessageAttachment, approveLinkedParentChatAccess, updateLinkedChildDisplay } from '../models/parent.model';
+import { createParentLink, createParentVerification, findChildByEmail, findParentById, findParentVerificationByChild, findParentVerificationByToken, getChildLinkRequests, listLinkedChildren, listParentVerifications, markAccountVerificationPending, respondToParentLink, reviewParentVerification, submitParentVerification, type ParentLinkRow, linkedParentsForChild, parentHasChatConsent, recordParentAccess, getChildParentAccessLog, getChildConversations, getChildConversationMessages, findLinkedChildMessageAttachment, findParentChildDelivery, approveLinkedParentChatAccess, updateLinkedChildDisplay } from '../models/parent.model';
 import { findUserById } from '../models/user.model';
 import { AppError } from '../utils/app-error';
 import { emitRealtimeEvent } from './realtime.service';
 import { sendParentVerificationDecisionEmail, sendParentVerificationEmail } from './email.service';
-import { resolveChatAttachmentPath } from './upload.service';
+import { resolveChatAttachmentPath, resolvePrivateDeliveryPath } from './upload.service';
 
 const hashToken = (token: string) => createHash('sha256').update(token).digest('hex');
 
@@ -108,6 +108,17 @@ export const parentChildMessageAttachment = (parentId: string, childId: string, 
   const filePath = resolveChatAttachmentPath(attachment.storageKey);
   if (!existsSync(filePath)) throw new AppError('Attachment is no longer available', 404);
   return { filePath, name: attachment.name, mimeType: attachment.mimeType };
+};
+
+export const parentChildDeliveryFile = (parentId: string, childId: string, deliveryId: string, download: boolean) => {
+  if (!findParentById(parentId)) throw new AppError('حساب ولي الأمر غير متاح', 403);
+  const delivery = findParentChildDelivery(parentId, childId, deliveryId);
+  if (!delivery) throw new AppError('ملف التسليم غير موجود أو لا تملك صلاحية الوصول إليه.', 404);
+  if (delivery.sourceUrl) throw new AppError('هذا التسليم رابط خارجي ويعرض من بطاقة التسليم.', 400);
+  if (download && delivery.isLocked) throw new AppError('يصبح تنزيل الملف متاحًا بعد اعتماد التسليم.', 403);
+  const filePath = resolvePrivateDeliveryPath(delivery.storageKey);
+  if (!existsSync(filePath)) throw new AppError('ملف التسليم لم يعد متاحًا.', 404);
+  return { filePath, name: delivery.name, mimeType: delivery.mimeType };
 };
 
 export const startParentVerification = async (childId: string, emailInput: string) => {

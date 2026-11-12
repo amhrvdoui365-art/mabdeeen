@@ -10,6 +10,7 @@ export const parentChildDisplaySchema = z.object({
 });
 export const parentChildMessagesParamsSchema = z.object({ childId: z.string().uuid(), peerId: z.string().uuid() });
 export const parentChildAttachmentParamsSchema = z.object({ childId: z.string().uuid(), messageId: z.string().uuid() });
+export const parentChildDeliveryParamsSchema = z.object({ childId: z.string().uuid(), deliveryId: z.string().uuid() });
 export const parentVerificationStartSchema = z.object({ email: z.string().trim().email().max(255).transform((value) => sanitizePlainText(value).toLowerCase()) });
 export const parentVerificationTokenSchema = z.object({ token: z.string().regex(/^[a-f0-9-]{60,80}$/i) });
 export const parentVerificationAnswerSchema = z.object({ answer: z.coerce.number().int().min(0).max(144) });

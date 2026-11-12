@@ -21,7 +21,7 @@ export const ParentDashboardPage = () => {
           <div className="min-w-0 flex-1">
             <p className="text-xs font-extrabold text-cyan-800">مساحة العائلة الآمنة</p>
             <h1 className="mt-1 min-w-0 max-w-full break-words text-2xl font-black text-slate-900 [overflow-wrap:anywhere] sm:text-3xl">لوحة ولي الأمر{user?.name ? ` · ${user.name}` : ''}</h1>
-            <p className="mt-2 text-sm leading-6 text-slate-600">تابع إنجازات أبنائك وخدماتهم ومحادثاتهم التي أتاحوها لك، من مكان واحد.</p>
+            <p className="mt-2 text-sm leading-6 text-slate-600">تابع تقدم أبنائك وطلباتهم وتقييماتهم وملفات تسليمهم ومحادثاتهم التي أتاحوها لك، من مكان واحد.</p>
           </div>
           <div className="flex flex-wrap gap-2">
             <button type="button" onClick={() => setView('profile')} className={`inline-flex min-h-10 items-center gap-2 rounded-xl px-3 py-2 text-xs font-extrabold transition ${view === 'profile' ? 'bg-cyan-700 text-white' : 'bg-white text-slate-700 hover:bg-cyan-50'}`}><UserRound className="size-4"/>ملفي</button>
