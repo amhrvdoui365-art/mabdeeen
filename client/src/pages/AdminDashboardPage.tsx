@@ -27,7 +27,7 @@ import {
   Search,
   Trash2,
 } from 'lucide-react';
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { lazy, Suspense, useEffect, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { CommunityDashboardPanel } from '@/components/dashboard/CommunityDashboardPanel';
@@ -80,6 +80,7 @@ const TABS = [
 ] as const;
 
 type TabId = (typeof TABS)[number]['id'];
+const FAVORITE_TABS_KEY = 'mabdeeen-admin-favorite-tabs';
 
 const TAB_GROUPS: { id: string; label: string; ids: TabId[]; sensitive?: boolean }[] = [
   { id: 'workspace', label: 'الرئيسية', ids: ['overview'] },
@@ -98,11 +99,36 @@ export const AdminDashboardPage = () => {
     return TABS.some((item) => item.id === requested) ? requested as TabId : 'overview';
   });
   const [sectionSearch, setSectionSearch] = useState('');
+  const [favoriteTabs, setFavoriteTabs] = useState<TabId[]>(() => {
+    try {
+      const saved = JSON.parse(window.localStorage.getItem(FAVORITE_TABS_KEY) ?? '[]') as string[];
+      return TABS.filter((item) => saved.includes(item.id)).map((item) => item.id);
+    } catch {
+      return [];
+    }
+  });
+  const sectionSearchRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     const requested = searchParams.get('tab');
     if (TABS.some((item) => item.id === requested)) setTab(requested as TabId);
   }, [searchParams]);
+
+  useEffect(() => {
+    window.localStorage.setItem(FAVORITE_TABS_KEY, JSON.stringify(favoriteTabs));
+  }, [favoriteTabs]);
+
+  useEffect(() => {
+    const handleShortcut = (event: KeyboardEvent) => {
+      if ((event.ctrlKey || event.metaKey) && event.key.toLowerCase() === 'k') {
+        event.preventDefault();
+        sectionSearchRef.current?.focus();
+        sectionSearchRef.current?.select();
+      }
+    };
+    window.addEventListener('keydown', handleShortcut);
+    return () => window.removeEventListener('keydown', handleShortcut);
+  }, []);
 
   const statsQuery = useQuery({
     queryKey: ['admin-stats'],
@@ -145,6 +171,7 @@ export const AdminDashboardPage = () => {
     setTab(nextTab);
     setSectionSearch('');
   };
+  const toggleFavorite = (favorite: TabId) => setFavoriteTabs((current) => current.includes(favorite) ? current.filter((item) => item !== favorite) : [...current, favorite]);
   const maintenanceActive = settingsQuery.data?.system.maintenanceEnabled ?? false;
   const maxSkillCount = Math.max(
     1,
@@ -310,10 +337,15 @@ export const AdminDashboardPage = () => {
               <p className="text-xs font-bold text-slate-500">التنقل في اللوحة</p>
               <div className="relative mt-3">
                 <Search className="pointer-events-none absolute right-3 top-1/2 size-4 -translate-y-1/2 text-slate-400" />
-                <input value={sectionSearch} onChange={(event) => setSectionSearch(event.target.value)} placeholder="ابحث عن قسم..." aria-label="ابحث عن قسم في لوحة الإدارة" className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-50" />
+                <input ref={sectionSearchRef} value={sectionSearch} onChange={(event) => setSectionSearch(event.target.value)} onKeyDown={(event) => { if (event.key === 'Enter' && filteredTabGroups[0]?.tabs[0]) selectTab(filteredTabGroups[0].tabs[0].id); if (event.key === 'Escape') setSectionSearch(''); }} placeholder="ابحث عن قسم..." aria-label="ابحث عن قسم في لوحة الإدارة" className="min-h-10 w-full rounded-xl border border-slate-200 bg-slate-50 pe-9 ps-3 text-sm outline-none transition placeholder:text-slate-400 focus:border-brand-400 focus:bg-white focus:ring-4 focus:ring-brand-50" />
+                <kbd className="pointer-events-none absolute left-2 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 py-0.5 text-[9px] font-bold text-slate-400 xl:inline">Ctrl K</kbd>
               </div>
             </div>
             <div className="space-y-4">
+              {!normalizedSectionSearch && favoriteTabs.length ? <section>
+                <h3 className="px-3 pb-1.5 text-[11px] font-black text-amber-700">الوصول السريع</h3>
+                <div className="space-y-1">{TABS.filter((item) => favoriteTabs.includes(item.id)).map((item) => <button key={item.id} type="button" onClick={() => selectTab(item.id)} className={`flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-start text-sm font-bold transition ${tab === item.id ? 'bg-brand-700 text-white shadow-md shadow-brand-200' : 'bg-amber-50/60 text-slate-700 hover:bg-amber-50'}`}><item.icon className="size-4 shrink-0"/><span className="min-w-0 flex-1 truncate">{item.label}</span><Star className="size-3.5 shrink-0 fill-amber-400 text-amber-500"/></button>)}</div>
+              </section> : null}
               {filteredTabGroups.map((group) => <section key={group.id}>
                 <h3 className={`px-3 pb-1.5 text-[11px] font-black ${group.sensitive ? 'text-rose-700' : 'text-slate-400'}`}>{group.label}</h3>
                 <div className="space-y-1">
@@ -321,11 +353,14 @@ export const AdminDashboardPage = () => {
                     const active = tab === item.id;
                     const count = tabCounts[item.id] ?? 0;
                     const sensitive = item.id === 'danger-zone';
-                    return <button key={item.id} type="button" aria-current={active ? 'page' : undefined} onClick={() => selectTab(item.id)} className={`flex min-h-10 w-full items-center gap-2.5 rounded-xl px-3 py-2 text-start text-sm font-bold transition ${active ? 'bg-brand-700 text-white shadow-md shadow-brand-200' : sensitive ? 'text-rose-700 hover:bg-rose-50' : 'text-slate-600 hover:bg-slate-50 hover:text-brand-800'}`}>
-                      <item.icon className="size-4 shrink-0" />
-                      <span className="min-w-0 flex-1 truncate">{item.label}</span>
-                      {count > 0 ? <span className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'}`}>{formatNumber(count)}</span> : null}
-                    </button>;
+                    return <div key={item.id} className="flex items-center gap-1">
+                      <button type="button" aria-current={active ? 'page' : undefined} onClick={() => selectTab(item.id)} className={`flex min-h-10 min-w-0 flex-1 items-center gap-2.5 rounded-xl px-3 py-2 text-start text-sm font-bold transition ${active ? 'bg-brand-700 text-white shadow-md shadow-brand-200' : sensitive ? 'text-rose-700 hover:bg-rose-50' : 'text-slate-600 hover:bg-slate-50 hover:text-brand-800'}`}>
+                        <item.icon className="size-4 shrink-0" />
+                        <span className="min-w-0 flex-1 truncate">{item.label}</span>
+                        {count > 0 ? <span className={`min-w-6 rounded-full px-1.5 py-0.5 text-center text-[10px] font-black ${active ? 'bg-white/20 text-white' : 'bg-rose-100 text-rose-700'}`}>{formatNumber(count)}</span> : null}
+                      </button>
+                      <button type="button" onClick={() => toggleFavorite(item.id)} aria-label={favoriteTabs.includes(item.id) ? `إزالة ${item.label} من الوصول السريع` : `إضافة ${item.label} إلى الوصول السريع`} aria-pressed={favoriteTabs.includes(item.id)} className="grid size-9 shrink-0 place-items-center rounded-lg text-slate-300 transition hover:bg-amber-50 hover:text-amber-600 aria-pressed:bg-amber-50 aria-pressed:text-amber-500"><Star className={`size-4 ${favoriteTabs.includes(item.id) ? 'fill-current' : ''}`}/></button>
+                    </div>;
                   })}
                 </div>
               </section>)}
