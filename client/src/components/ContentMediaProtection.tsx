@@ -4,7 +4,7 @@ const protectMedia = (root: ParentNode): void => {
   root.querySelectorAll('img, video, audio, canvas').forEach((element) => {
     if (element instanceof HTMLImageElement) element.draggable = false;
     if (element instanceof HTMLMediaElement && element.controls) {
-      element.controlsList.add('nodownload');
+      element.setAttribute('controlsList', 'nodownload');
       if (element instanceof HTMLVideoElement) element.disablePictureInPicture = true;
     }
   });
@@ -31,7 +31,7 @@ export const ContentMediaProtection = () => {
           if (node.matches('img, video, audio, canvas')) {
             if (node instanceof HTMLImageElement) node.draggable = false;
             if (node instanceof HTMLMediaElement && node.controls) {
-              node.controlsList.add('nodownload');
+              node.setAttribute('controlsList', 'nodownload');
               if (node instanceof HTMLVideoElement) node.disablePictureInPicture = true;
             }
           }
