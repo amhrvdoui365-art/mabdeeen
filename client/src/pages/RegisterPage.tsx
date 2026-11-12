@@ -14,6 +14,7 @@ import { useForm } from 'react-hook-form';
 import { Link, Navigate, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthLayout } from '@/components/layout/AuthLayout';
 import { GoogleAuthButton } from '@/components/auth/GoogleAuthButton';
+import { DemoModeSwitcher } from '@/components/auth/DemoModeSwitcher';
 import { GitHubAuthButton } from '@/components/auth/GitHubAuthButton';
 import { InlineLoader } from '@/components/ui/Spinner';
 import { useAuth } from '@/context/AuthContext';
@@ -136,6 +137,7 @@ export const RegisterPage = () => {
         </p>
       }
     >
+      <div className="mb-5"><DemoModeSwitcher mode="inline" /></div>
       <form onSubmit={submit} className="space-y-5">
         {githubError ? (
           <div role="alert" className="rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
