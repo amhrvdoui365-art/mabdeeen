@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { CheckCircle2, FileImage, FileText, Link2, LockKeyhole, RefreshCw, ShieldCheck, UploadCloud, X } from 'lucide-react';
+import { CheckCircle2, Copy, Download, FileImage, FileText, Link2, LockKeyhole, RefreshCw, ShieldCheck, UploadCloud, X } from 'lucide-react';
 import { useEffect, useRef, useState } from 'react';
 import { deliveryApi, type ProtectedDelivery } from '@/services/rewards.service';
 import { getErrorMessage } from '@/services/api';
@@ -93,6 +93,7 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
   const [linkUrl, setLinkUrl] = useState('');
   const [linkTitle, setLinkTitle] = useState('');
   const [linkError, setLinkError] = useState<string | null>(null);
+  const [downloadingId, setDownloadingId] = useState<string | null>(null);
   const deliveryQueryKey = ['protected-deliveries', orderId ?? projectId];
   const deliveriesQuery = useQuery({
     queryKey: deliveryQueryKey,
@@ -163,6 +164,35 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
   const isFreelancer = role === 'Freelancer';
   const items = deliveriesQuery.data ?? [];
 
+  const downloadApprovedFile = async (item: ProtectedDelivery) => {
+    setDownloadingId(item.id);
+    setMessage(null);
+    try {
+      const blob = await deliveryApi.file(item.previewUrl, true);
+      const objectUrl = URL.createObjectURL(blob);
+      const anchor = document.createElement('a');
+      anchor.href = objectUrl;
+      anchor.download = item.fileName;
+      document.body.appendChild(anchor);
+      anchor.click();
+      anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(objectUrl), 1000);
+    } catch (error) {
+      setMessage(getErrorMessage(error, 'تعذر تنزيل ملف التسليم.'));
+    } finally {
+      setDownloadingId(null);
+    }
+  };
+
+  const copyApprovedLink = async (url: string) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setMessage('تم نسخ رابط التسليم.');
+    } catch {
+      setMessage('تعذر نسخ الرابط من هذا المتصفح.');
+    }
+  };
+
   return (
     <section className="flex min-h-0 min-w-0 flex-col rounded-2xl border border-indigo-100 bg-white shadow-sm" aria-label="تسليم المشروع النهائي">
       <header className="flex items-center gap-2 border-b border-indigo-50 bg-linear-to-l from-indigo-50/80 to-white px-3 py-3">
@@ -203,6 +233,11 @@ export const ProtectedDeliveryPanel = ({ projectId, clientId, role, orderId, can
             <div className="relative overflow-hidden border-y border-slate-100">
               <Preview delivery={item} locked={locked} viewerRole={role} onOpenImage={(url) => setImagePreview({ url, name: item.fileName })} />{orderId ? <div className="pointer-events-none absolute inset-0 z-10 grid place-items-center overflow-hidden"><span className="-rotate-12 rounded-full border border-white/30 bg-slate-950/35 px-4 py-2 text-center text-[10px] font-black tracking-wide text-white/75 shadow-lg">معاينة خاصة · طلب {orderId.slice(0, 8)}</span></div> : null}
             </div>
+            {orderId && !locked ? <div className="flex flex-wrap items-center gap-2 p-2.5">
+              {item.sourceUrl ? <button type="button" onClick={() => void copyApprovedLink(item.sourceUrl!)} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl border border-indigo-200 bg-indigo-50 px-3 text-xs font-extrabold text-indigo-800 transition hover:bg-indigo-100"><Copy className="size-4" />نسخ رابط التسليم</button>
+                : <button type="button" onClick={() => void downloadApprovedFile(item)} disabled={downloadingId === item.id} className="inline-flex min-h-10 items-center justify-center gap-2 rounded-xl bg-indigo-600 px-3 text-xs font-extrabold text-white transition hover:bg-indigo-700 disabled:opacity-50"><Download className="size-4" />{downloadingId === item.id ? 'جارٍ التنزيل…' : 'تنزيل الملف'}</button>}
+              <span className="text-[10px] font-semibold text-emerald-700">متاح للمشتري والمستقل بعد قبول التسليم</span>
+            </div> : null}
             {isClient && item.status === 'pending_approval' && locked ? <div className="grid grid-cols-1 gap-2 p-2.5 sm:grid-cols-2">
               <button type="button" onClick={() => approveMutation.mutate(item.id)} disabled={approveMutation.isPending} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl bg-emerald-600 px-2 text-xs font-extrabold text-white transition hover:bg-emerald-700 disabled:opacity-50"><CheckCircle2 className="size-4" />قبول الاستلام</button>
               <button type="button" onClick={() => revisionMutation.mutate(item.id)} disabled={revisionMutation.isPending} className="inline-flex min-h-10 items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-2 text-xs font-extrabold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50"><RefreshCw className="size-3.5" />طلب تعديل</button>

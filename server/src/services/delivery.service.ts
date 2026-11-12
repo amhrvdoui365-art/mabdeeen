@@ -163,7 +163,7 @@ export const getDeliveryFile = (deliveryId: string, userId: string, download: bo
   const row = findDeliveryForParticipant(deliveryId, userId);
   if (!row) throw new AppError('ملف التسليم غير موجود أو لا تملك صلاحية عرضه.', 404);
   if (row.source_url) throw new AppError('هذا التسليم رابط خارجي ويعرض عبر المعاينة المضمّنة.', 400);
-  if (download) throw new AppError('المعاينة فقط متاحة لملفات التسليم.', 403);
+  if (download && row.is_locked) throw new AppError('لا يمكن تنزيل التسليم قبل موافقة المشتري.', 403);
   const filePath = resolvePrivateDeliveryPath(row.storage_key);
   if (!existsSync(filePath)) throw new AppError('ملف التسليم لم يعد متاحاً.', 404);
   return { filePath, name: row.file_name, mimeType: row.file_type };
