@@ -89,22 +89,18 @@ export const GuidePage = () => {
     </section>
 
     <div className="container-page space-y-6 py-8 sm:space-y-8 sm:py-12">
-      <ContentSection id="getting-started" eyebrow="01 · البداية" title="إنشاء الحساب وتجهيزه" description="اختر الدور المناسب عند التسجيل، ثم استخدم بيانات صحيحة وأكمل الحقول المطلوبة. تختلف خطوات التوثيق وصلاحيات الحساب بحسب الدور وحالة الحساب." icon={BadgeCheck}>
-        <ol className="grid gap-3 sm:grid-cols-3">{['أنشئ حسابًا بالبريد أو بطريقة الدخول المتاحة في صفحة التسجيل.', 'اختر نوع الحساب الصحيح وأكمل بيانات الملف والصورة والمهارات أو الاهتمامات.', 'افتح لوحة التحكم من القائمة لمتابعة الطلبات والرسائل والإشعارات.'].map((step, index) => <li key={step} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><span className="text-xs font-black text-cyan-700">الخطوة {index + 1}</span><p className="mt-2 text-sm leading-6 text-slate-600">{step}</p></li>)}</ol>
+      <ContentSection id="getting-started" eyebrow="01 · البداية" title="أهلًا بك في مبدعين!" description="مبدعين مساحة عربية مجانية وممتعة لعرض المشاريع البرمجية والتصميمية وتطوير المهارات، بمشاركة الأسرة وإشرافها." icon={BadgeCheck}>
+        <ol className="grid gap-3 sm:grid-cols-2">{['أنشئ حسابك بمساعدة أسرتك، وأكمل ملفك بمعلومات مناسبة وآمنة.', 'ارفع مشروعك أو أضف عملًا من إنجازك تملك حق مشاركته.', 'تواصل بلطف واحترام، وشارك أفكارك وكلمات التشجيع.', 'استمتع بالتعلّم وواصل تطوير مهاراتك وشارك إنجازاتك!'].map((step, index) => <li key={step} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><span className="text-xs font-black text-cyan-700">الخطوة {index + 1}</span><p className="mt-2 text-sm leading-6 text-slate-600">{step}</p></li>)}</ol>
         <div className="mt-4 flex flex-wrap gap-3"><Link to="/login" className="text-sm font-extrabold text-cyan-800 hover:underline">تسجيل الدخول</Link><Link to="/register" className="text-sm font-extrabold text-cyan-800 hover:underline">إنشاء حساب جديد</Link><Link to="/complete-profile" className="text-sm font-extrabold text-cyan-800 hover:underline">إكمال الملف</Link></div>
       </ContentSection>
 
-      <ContentSection id="young-creators" eyebrow="02 · رحلة الناشئة" title="رحلة المبدع الصغير خطوة بخطوة" description="تشجع مبدعين الناشئة من 8 إلى 18 عامًا على تنمية مهاراتهم وعرض مشاريعهم. لا يعني ذلك أن الحساب المستقل أو كل ميزة متاحة لكل عمر؛ تحدد إمكانية الاستخدام وفق ضوابط السن والأمان السارية وموافقة ولي الأمر وإشرافه." icon={Sparkles}>
-        <ol className="grid gap-3 sm:grid-cols-2">
-          {[
-            'ابدأ مع أسرتك: راجعوا شروط الاستخدام وحددوا معًا ما إذا كان إنشاء الحساب والميزة المطلوبة متاحين لعمر الطفل.',
-            'أنشئ ملفًا مناسبًا بمساعدة ولي أمرك، واستخدم اسمًا وصورة ومعلومات لا تكشف عنوان المنزل أو المدرسة أو بيانات الاتصال الشخصية.',
-            'اعرض مشروعًا من إنجازك أو شارك أعمالك التي تملك حق نشرها، واكتب وصفًا محترمًا يوضح ما تعلمته وكيف أنجزته.',
-            'استخدم قنوات المنصة للتواصل، ولا تشارك كلمات المرور أو رموز الدخول أو بيانات الدفع، وأخبر ولي أمرك عن أي طلب مريب أو مزعج.',
-            'قبل قبول أي عمل مدفوع أو ترتيب مالي، يجب أن يراجعه ولي أمرك ويتحقق من ملاءمته للعمر والقواعد المنطبقة. لا توفر مبدعين حاليًا محفظة نقدية أو تحويلًا أو سحبًا للأرباح، والنقاط ليست أموالًا.',
-          ].map((step, index) => <li key={step} className="rounded-2xl border border-slate-100 bg-slate-50 p-4"><span className="text-xs font-black text-cyan-700">الخطوة {index + 1}</span><p className="mt-2 text-sm leading-6 text-slate-600">{step}</p></li>)}
-        </ol>
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm leading-7 text-amber-950">قد تمنع ضوابط العمر الحسابات المستقلة أو تفرض إعدادات أمان لا يمكن تعطيلها. موافقة ولي الأمر لا تتجاوز قيود السن أو الأنظمة المعمول بها.</div>
+      <ContentSection id="young-creators" eyebrow="02 · رحلة الناشئة" title="مساحة آمنة للتعلّم والإبداع" description="نرحب بالناشئة من عمر 8 إلى 18 سنة لعرض مواهبهم ومشاريعهم، مع مشاركة الأسرة وإشرافها بما يناسب عمر المبدع." icon={Sparkles}>
+        <div className="grid gap-3 sm:grid-cols-3">{[
+          ['كن لطيفًا', 'احترم الجميع، واختر كلمات مشجعة، وابتعد عن المحتوى المؤذي أو المسيء أو غير المناسب للعمر.'],
+          ['حافظ على خصوصيتك', 'لا تشارك رقم هاتفك أو عنوانك أو كلمة مرورك أو أي معلومة شخصية حساسة.'],
+          ['شارك بأمانة', 'اعرض أعمالك التي أنجزتها، أو الأعمال التي لديك إذن بمشاركتها.'],
+        ].map(([title, text]) => <article key={title} className="rounded-2xl border border-cyan-100 bg-cyan-50/60 p-4"><h3 className="font-extrabold text-cyan-950">{title}</h3><p className="mt-2 text-sm leading-6 text-slate-700">{text}</p></article>)}</div>
+        <p className="mt-4 rounded-2xl bg-violet-50 p-4 text-sm leading-7 text-violet-950">النقاط وسيلة تشجيع ومكافآت داخلية لإبراز الأنشطة والمشاريع، وليست نقودًا. استمتع بمشاركة أفكارك وتعلّم أشياء جديدة مع مجتمع مبدعين! ✨</p>
       </ContentSection>
 
       <ContentSection id="roles" eyebrow="03 · الحسابات" title="اختر المسار المناسب لك" description="لكل دور صفحات وأدوات مختلفة. استخدم حسابك الشخصي فقط، ولا تشارك كلمة المرور أو رموز الدخول مع أي شخص." icon={UsersRound}>
