@@ -10,6 +10,7 @@ import { ToastProvider } from '@/context/ToastContext';
 import { HomePage } from '@/pages/HomePage';
 import { SupportChatWidget } from '@/components/support/SupportChatWidget';
 import { AdminImpersonationBanner } from '@/components/layout/AdminImpersonationBanner';
+import { ContentMediaProtection } from '@/components/ContentMediaProtection';
 
 const AdminDashboardPage = lazy(() => import('@/pages/AdminDashboardPage').then((module) => ({ default: module.AdminDashboardPage })));
 const ArticlePage = lazy(() => import('@/pages/ArticlePage').then((module) => ({ default: module.ArticlePage })));
@@ -78,6 +79,7 @@ export const App = () => {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <BrowserRouter>
+          <ContentMediaProtection />
           <AuthProvider>
             <ToastProvider>
               <ScrollToTop />
