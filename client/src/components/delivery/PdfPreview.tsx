@@ -1,4 +1,4 @@
-import { ChevronLeft, ChevronRight, Maximize2, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Maximize2, Minus, Plus, RotateCcw, X } from 'lucide-react';
 import { getDocument, GlobalWorkerOptions, type PDFDocumentLoadingTask, type PDFDocumentProxy } from 'pdfjs-dist';
 import workerUrl from 'pdfjs-dist/build/pdf.worker.min.mjs?url';
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
@@ -6,7 +6,7 @@ import { createPortal } from 'react-dom';
 
 GlobalWorkerOptions.workerSrc = workerUrl;
 
-const PageCanvas = ({ doc, pageNumber }: { doc: PDFDocumentProxy; pageNumber: number }) => {
+const PageCanvas = ({ doc, pageNumber, zoom = 1 }: { doc: PDFDocumentProxy; pageNumber: number; zoom?: number }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [box, setBox] = useState({ width: 0, height: 0 });
@@ -38,7 +38,7 @@ const PageCanvas = ({ doc, pageNumber }: { doc: PDFDocumentProxy; pageNumber: nu
       if (cancelled || !canvas) return;
       const base = page.getViewport({ scale: 1 });
       const ratio = Math.min(window.devicePixelRatio || 1, 2);
-      const scale = Math.min(box.width / base.width, box.height / base.height) * ratio;
+      const scale = Math.min(box.width / base.width, box.height / base.height) * ratio * zoom;
       const viewport = page.getViewport({ scale });
       const context = canvas.getContext('2d');
       if (!context) return;
@@ -53,11 +53,11 @@ const PageCanvas = ({ doc, pageNumber }: { doc: PDFDocumentProxy; pageNumber: nu
       return task.promise.then(() => { if (!cancelled) setReady(true); });
     }).catch(() => { if (!cancelled) setFailed(true); });
     return () => { cancelled = true; task?.cancel(); };
-  }, [box, doc, pageNumber]);
+  }, [box, doc, pageNumber, zoom]);
 
   return (
-    <div ref={containerRef} className="relative grid size-full place-items-center overflow-hidden">
-      <canvas ref={canvasRef} dir="ltr" aria-label={`صفحة PDF ${pageNumber}`} className={`max-h-full max-w-full shadow-sm transition-opacity duration-200 ${ready ? 'opacity-100' : 'opacity-0'}`} />
+    <div ref={containerRef} className="relative flex size-full items-center justify-center overflow-auto p-3 sm:p-5">
+      <canvas ref={canvasRef} dir="ltr" aria-label={`صفحة PDF ${pageNumber}`} className={`shrink-0 shadow-xl transition-opacity duration-200 ${ready ? 'opacity-100' : 'opacity-0'}`} />
       {failed ? <span role="alert" className="absolute text-xs text-rose-600">تعذرت معاينة هذه الصفحة.</span> : !ready ? <span className="absolute text-xs text-slate-400">جارٍ تجهيز معاينة PDF…</span> : null}
     </div>
   );
@@ -80,6 +80,7 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
   const [failed, setFailed] = useState(false);
   const [pageNumber, setPageNumber] = useState(1);
   const [expanded, setExpanded] = useState(false);
+  const [zoom, setZoom] = useState(1);
   const dialogRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -88,6 +89,7 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
     setDoc(null);
     setFailed(false);
     setPageNumber(1);
+    setZoom(1);
     setExpanded(false);
     // CSP connect-src is 'self', so pdf.js cannot fetch a blob: URL; feed it the fetched bytes instead.
     blob.arrayBuffer().then((buffer) => {
@@ -141,6 +143,10 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
     };
   }, [expanded, doc]);
 
+  useEffect(() => {
+    if (expanded) setZoom(1.5);
+  }, [expanded]);
+
   const total = doc?.numPages ?? 0;
 
   if (failed) return <div className={`grid place-items-center bg-slate-50 text-xs text-rose-600 ${className ?? ''}`}>تعذرت معاينة ملف PDF.</div>;
@@ -156,12 +162,22 @@ export const PdfPreview = ({ blob, title, className }: { blob: Blob; title: stri
       </div>
       {expanded && doc ? createPortal(
         <div ref={dialogRef} role="dialog" aria-modal="true" aria-label={`معاينة ${title}`} dir="rtl" onMouseDown={(event) => { if (event.target === event.currentTarget) setExpanded(false); }} onContextMenu={(event) => event.preventDefault()} className="fixed inset-0 z-[230] flex flex-col bg-slate-950/95 p-3 sm:p-5">
-          <div className="mb-3 flex items-center justify-between gap-2 text-white">
-            <p className="truncate text-xs font-bold sm:text-sm">{title}</p>
-            <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="flex size-10 shrink-0 items-center justify-center rounded-full bg-white/15"><X className="size-5" /></button>
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-white/10 bg-white/5 px-3 py-2.5 text-white shadow-lg backdrop-blur sm:px-4">
+            <div className="flex min-w-0 flex-1 items-center gap-3">
+              <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-rose-500/15 text-rose-300"><span className="text-[10px] font-black">PDF</span></span>
+              <div className="min-w-0"><p className="truncate text-xs font-extrabold sm:text-sm">{title}</p><p className="mt-0.5 text-[10px] text-white/55">صفحة {pageNumber} من {total}</p></div>
+            </div>
+            <div className="flex items-center gap-1 rounded-xl border border-white/10 bg-black/20 p-1" dir="ltr" aria-label="أدوات تكبير المعاينة">
+              <button type="button" onClick={() => setZoom((value) => Math.max(0.75, Math.round((value - 0.25) * 100) / 100))} disabled={zoom <= 0.75} aria-label="تصغير الصفحة" title="تصغير" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><Minus className="size-4" /></button>
+              <span className="min-w-12 text-center text-[11px] font-bold tabular-nums">{Math.round(zoom * 100)}%</span>
+              <button type="button" onClick={() => setZoom((value) => Math.min(3, Math.round((value + 0.25) * 100) / 100))} disabled={zoom >= 3} aria-label="تكبير الصفحة" title="تكبير" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><Plus className="size-4" /></button>
+              <span className="mx-1 h-5 w-px bg-white/15" />
+              <button type="button" onClick={() => setZoom(1)} disabled={zoom === 1} aria-label="ملاءمة الصفحة للشاشة" title="ملاءمة الصفحة" className="grid size-9 place-items-center rounded-lg hover:bg-white/10 disabled:opacity-35"><RotateCcw className="size-4" /></button>
+            </div>
+            <button type="button" onClick={() => setExpanded(false)} aria-label="إغلاق المعاينة" className="flex size-10 shrink-0 items-center justify-center rounded-xl bg-white/10 transition hover:bg-white/20"><X className="size-5" /></button>
           </div>
-          <div className="min-h-0 flex-1"><PageCanvas doc={doc} pageNumber={pageNumber} /></div>
-          {total > 1 ? <div className="mt-3"><PageControls pageNumber={pageNumber} total={total} onChange={setPageNumber} /></div> : null}
+          <div className="min-h-0 flex-1 overflow-hidden rounded-2xl border border-white/10 bg-slate-800/70 shadow-inner"><PageCanvas doc={doc} pageNumber={pageNumber} zoom={zoom} /></div>
+          {total > 1 ? <div className="mt-3 flex justify-center"><div className="rounded-xl border border-white/10 bg-white/5 px-3 py-1"><PageControls pageNumber={pageNumber} total={total} onChange={setPageNumber} /></div></div> : null}
         </div>,
         document.body,
       ) : null}
