@@ -4,6 +4,7 @@ import { createUserNotification } from '../models/notification.model';
 import { findServiceById } from '../models/services.model';
 import { emitRealtimeEvent, emitRealtimeEventToAll } from './realtime.service';
 import { AppError } from '../utils/app-error';
+import { scanText } from '../utils/moderation';
 
 type OrderStatus = 'requested' | 'accepted' | 'rejected' | 'in_progress' | 'delivered' | 'revision_requested' | 'completed' | 'cancelled';
 type OrderRow = { id: string; service_id: string | null; freelancer_id: string; buyer_id: string; service_title: string; price_snapshot: number; brief: string; status: OrderStatus; created_at: string; updated_at: string; completed_at: string | null };
@@ -57,6 +58,7 @@ export const transitionOrder = (id: string, userId: string, action: 'accept' | '
 };
 export const addOrderMessage = (id: string, userId: string, content: string) => {
   const row = getOrder(id, userId);
+  if (scanText(content).length > 0) throw new AppError('لحمايتك، لا ترسل أرقام هاتف أو بريد أو روابط تواصل خارج المنصة.', 400);
   if (['rejected', 'completed', 'cancelled'].includes(row.status)) throw new AppError('المحادثة مغلقة لهذا الطلب.', 409);
   const messageId = randomUUID();
   db.prepare('INSERT INTO order_messages (id, order_id, sender_id, content) VALUES (?, ?, ?, ?)').run(messageId, id, userId, content.trim());
